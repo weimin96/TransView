@@ -25,6 +25,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.aspose</groupId>
             <artifactId>aspose-cad</artifactId>
             <version>23.5</version> <!-- 确保使用最新版本 -->
