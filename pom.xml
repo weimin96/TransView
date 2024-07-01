@@ -1,41 +1,48 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.14</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
 
     <groupId>io.github.weimin96</groupId>
-    <artifactId>spring-boot-cad-starter</artifactId>
+    <artifactId>file-viewer-tool</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <name>spring-boot-cad-starter</name>
-    <description>spring-boot-cad-starter.</description>
-    <url>https://github.com/weimin96/spring-boot-cad-starter</url>
+    <name>file-viewer-tool</name>
+    <description>file-viewer-tool.</description>
+    <url>https://github.com/weimin96/file-viewer-tool</url>
 
     <properties>
         <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <itext.version>8.0.2</itext.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>2.7.14</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- cad解析 -->
+        <dependency>
+            <groupId>com.aspose</groupId>
+            <artifactId>aspose-cad</artifactId>
+            <version>24.3</version>
         </dependency>
 
         <dependency>
             <groupId>com.aspose</groupId>
-            <artifactId>aspose-cad</artifactId>
-            <version>23.5</version> <!-- 确保使用最新版本 -->
+            <artifactId>aspose-words</artifactId>
+            <version>15.8.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/aspose-words-15.8.0-jdk16.jar</systemPath>
         </dependency>
 
+        <!-- svg解析 -->
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
@@ -65,19 +72,25 @@
     </dependencies>
 
     <repositories>
-<!--        <repository>-->
-<!--            <id>public</id>-->
-<!--            <name>aliyun nexus</name>-->
-<!--            <url>https://maven.aliyun.com/repository/public</url>-->
-<!--            <releases>-->
-<!--                <enabled>true</enabled>-->
-<!--            </releases>-->
-<!--        </repository>-->
         <repository>
-            <id>AsposeJavaAPI</id>
-            <name>Aspose Java API</name>
-            <url>https://repository.aspose.com/repo/</url>
+            <id>public</id>
+            <name>aliyun nexus</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
+<!--        <repository>-->
+<!--            <id>AsposeJavaAPI</id>-->
+<!--            <name>Aspose Java API</name>-->
+<!--            <url>https://repository.aspose.com/repo/</url>-->
+<!--        </repository>-->
+
+            <repository>
+                <id>AsposeJavaAPI</id>
+                <name>Aspose Java API</name>
+                <url>https://releases.aspose.com/java/repo/</url>
+            </repository>
 
     </repositories>
 
@@ -92,6 +105,23 @@
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
