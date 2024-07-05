@@ -14,7 +14,15 @@ public class Constant {
 
         String IMAGE_SVG_VALUE = "image/svg+xml";
 
+        String JSON_VALUE = "application/json";
+
+        String VIDEO_MPEG_VALUE = "audio/mpeg";
+
+        String VIDEO_MP4_VALUE = "video/mp4";
+
         String PDF_VALUE = "application/pdf";
+
+        String TXT_VALUE = "text/plain";
 
         String IMAGE_JPEG_VALUE = "image/jpeg";
 

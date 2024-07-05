@@ -1,0 +1,83 @@
+name: Java CI
+
+on:
+  push:
+    tags-ignore:
+      - '*'
+    branches:
+      - 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    #	配置权限
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      # 下载代码
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 8
+        # 安装 JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: maven
+      # 配置 settings.xml 一般用于 Mavne 私库验证等
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v21
+        with:
+          repositories: ''
+          servers: ''
+#      - name: Report Coverage to Coveralls for Pull Requests
+#        if: github.event_name == 'pull_request'
+#        run: mvn clean test jacoco:report coveralls:report -Dlicense.skip=true -DrepoToken=$GITHUB_TOKEN -DserviceName=github -DpullRequest=$PR_NUMBER -B package --file pom.xml
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+#          PR_NUMBER: ${{ github.event.number }}
+#      - name: Report Coverage to Coveralls for General Push
+#        if: github.event_name == 'push'
+#        run: mvn clean test jacoco:report coveralls:report -Dlicense.skip=true -DrepoToken=$GITHUB_TOKEN -DserviceName=github -B package --file pom.xml
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+      - name: package
+        if: github.event_name == 'push'
+        run: mvn clean test -Dlicense.skip=true -DrepoToken=$GITHUB_TOKEN -DserviceName=github -B package --file pom.xml
+      # 获取当前版本
+      - name: extract version
+        id: get-version
+        run: |
+          RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+      # 获取上一个版本
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          LAST_VERSION=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_ENV
+      # 监听版本变化
+      - name: Check if version changed
+        id: version_changed
+        run: |
+          if [ "${{ env.RELEASE_VERSION }}" == "${{ env.LAST_VERSION }}" ]; then
+            echo "version_changed=false" >> $GITHUB_ENV
+          else
+            echo "version_changed=true" >> $GITHUB_ENV
+          fi
+      # 将打包好的 Jar 包 放到 staging 文件夹
+      - run: mkdir staging && cp target/*.jar staging
+      # 发布release
+      - uses: ncipollo/release-action@v1
+        if: env.version_changed == 'true'
+        with:
+          allowUpdates: true
+          artifacts: "staging/*.jar"
+          name: "v${{ env.RELEASE_VERSION }}"
+          tag: "${{ env.RELEASE_VERSION }}"
+          commit: "main"
+          bodyFile: "document/release.md"
+          token: "${{ secrets.RELEASE_TOKEN }}"

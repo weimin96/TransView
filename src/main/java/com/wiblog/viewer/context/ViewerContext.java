@@ -3,10 +3,8 @@ package com.wiblog.viewer.context;
 import com.wiblog.viewer.common.StrategyTypeEnum;
 import com.wiblog.viewer.handler.ViewerHandler;
 import com.wiblog.viewer.handler.impl.CadHandler;
-import com.wiblog.viewer.handler.impl.ImageHandler;
-import com.wiblog.viewer.handler.impl.WordHandler;
+import com.wiblog.viewer.handler.impl.PlainHandler;
 import com.wiblog.viewer.utils.Util;
-import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,11 +30,11 @@ public class ViewerContext {
         // cad
         VIEWER_HANDLER_MAP.put(StrategyTypeEnum.DWG, CadHandler::new);
         // word
-        VIEWER_HANDLER_MAP.put(StrategyTypeEnum.DOC, WordHandler::new);
-        VIEWER_HANDLER_MAP.put(StrategyTypeEnum.DOCX, WordHandler::new);
-        // 图片
-        for (StrategyTypeEnum picture : StrategyTypeEnum.PICTURE_TYPES) {
-            VIEWER_HANDLER_MAP.put(picture, ImageHandler::new);
+//        VIEWER_HANDLER_MAP.put(StrategyTypeEnum.DOC, WordHandler::new);
+//        VIEWER_HANDLER_MAP.put(StrategyTypeEnum.DOCX, WordHandler::new);
+        // 普通文件
+        for (StrategyTypeEnum item : StrategyTypeEnum.PLAIN_TYPES) {
+            VIEWER_HANDLER_MAP.put(item, PlainHandler::new);
         }
     }
 

@@ -3,9 +3,10 @@ package com.wiblog.viewer.utils;
 import com.wiblog.viewer.common.Constant;
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.transform.OutputKeys;
@@ -31,8 +32,9 @@ public class SVGUtil {
 
     /**
      * 裁剪SVG
+     *
      * @param inputStream 输入流
-     * @param cropHeight 裁剪高度
+     * @param cropHeight  裁剪高度
      * @return svg内容
      */
     public static String cropSvgString(InputStream inputStream, int cropHeight) {
@@ -43,24 +45,34 @@ public class SVGUtil {
             doc = factory.createDocument(null, inputStream);
             // 获取根元素
             Element svgRoot = doc.getDocumentElement();
+            // 获取根元素下的直接子节点
+            NodeList childNodes = svgRoot.getChildNodes();
 
-            // 获取原始宽高
-            float originalWidth = Float.parseFloat(svgRoot.getAttribute("width").replace("px", ""));
-            float originalHeight = Float.parseFloat(svgRoot.getAttribute("height").replace("px", ""));
+            for (int i = childNodes.getLength() - 1; i > 0; i--) {
+                Node node = childNodes.item(i);
+                if (node.getNodeType() == Node.ELEMENT_NODE && "g".equals(node.getNodeName())) {
+                    svgRoot.removeChild(node);
+                    break;
+                }
+            }
 
-            // 创建新的 SVG 文档
-            DOMImplementation impl = doc.getImplementation();
-            Document newDoc = impl.createDocument(svgRoot.getNamespaceURI(), "svg", null);
-            Element newSvgRoot = newDoc.getDocumentElement();
-            newSvgRoot.setAttribute("width", String.valueOf(originalWidth));
-            newSvgRoot.setAttribute("height", String.valueOf(originalHeight - cropHeight));
-
-            // 设置 viewBox 属性以裁剪顶部100像素
-            newSvgRoot.setAttribute("viewBox", "0 " + cropHeight + " " + originalWidth + " " + (originalHeight - cropHeight));
-
-            // 导入原始内容
-            Element importedRoot = (Element) newDoc.importNode(svgRoot, true);
-            newSvgRoot.appendChild(importedRoot);
+//            // 获取原始宽高
+//            float originalWidth = Float.parseFloat(svgRoot.getAttribute("width").replace("px", ""));
+//            float originalHeight = Float.parseFloat(svgRoot.getAttribute("height").replace("px", ""));
+//
+//            // 创建新的 SVG 文档
+//            DOMImplementation impl = doc.getImplementation();
+//            Document newDoc = impl.createDocument(svgRoot.getNamespaceURI(), "svg", null);
+//            Element newSvgRoot = newDoc.getDocumentElement();
+//            newSvgRoot.setAttribute("width", String.valueOf(originalWidth));
+//            newSvgRoot.setAttribute("height", String.valueOf(originalHeight - cropHeight));
+//
+//            // 设置 viewBox 属性以裁剪顶部100像素
+//            newSvgRoot.setAttribute("viewBox", "0 " + cropHeight + " " + originalWidth + " " + (originalHeight - cropHeight));
+//
+////             导入原始内容
+//            Element importedRoot = (Element) newDoc.importNode(svgRoot, true);
+//            newSvgRoot.appendChild(importedRoot);
 
             // 保存裁剪后的 SVG 文件
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -75,7 +87,7 @@ public class SVGUtil {
             StreamResult result = new StreamResult(stringWriter);
 
             // 进行转换
-            transformer.transform(new DOMSource(newDoc), result);
+            transformer.transform(new DOMSource(doc), result);
             // 获取转换后的字符串
             return stringWriter.toString();
         } catch (Exception e) {
@@ -86,7 +98,7 @@ public class SVGUtil {
     /**
      * 预览 SVG 文件
      *
-     * @param svgStr   svg内容
+     * @param svgStr svg内容
      */
     public static void previewSvg(String svgStr) {
         HttpServletResponse response = Util.getResponse();

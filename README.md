@@ -1,1 +1,3 @@
-# 文件预览工具
+# file view tool
+
+README: [English](README.md) | [中文](README-zh-CN.md)

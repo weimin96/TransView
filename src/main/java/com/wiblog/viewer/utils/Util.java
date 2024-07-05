@@ -43,9 +43,9 @@ public class Util {
     public static String getExtension(String path) {
         int lastIndex = path.lastIndexOf('.');
         if (lastIndex != -1 && lastIndex < path.length() - 1) {
-            return path.substring(lastIndex + 1);
+            return path.substring(lastIndex + 1).toLowerCase();
         } else {
-            return null;
+            return path;
         }
     }
 }
