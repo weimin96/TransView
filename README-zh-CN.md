@@ -45,6 +45,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 **方式二、单独引入**
 
+核心模块（必须）
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
@@ -52,7 +53,15 @@ README: [English](README.md) | [中文](README-zh-CN.md)
     <version>${lastVersion}</version>
 </dependency>
 ```
-、、、
+
+cad模块
+```xml
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>file-viewer-cad</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+```
 
 ### 使用
 

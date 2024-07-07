@@ -46,6 +46,7 @@ You can individually import each module according to your needs, or you can impo
 
 **Mode two:Separate introduction**
 
+core module(must)
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
@@ -53,7 +54,15 @@ You can individually import each module according to your needs, or you can impo
     <version>${lastVersion}</version>
 </dependency>
 ```
-、、、
+
+cad module
+```xml
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>file-viewer-cad</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+```
 
 ### Usage
 
