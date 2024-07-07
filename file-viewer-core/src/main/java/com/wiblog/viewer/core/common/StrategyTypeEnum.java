@@ -14,6 +14,8 @@ public enum StrategyTypeEnum {
     DWG("dwg", Constant.MediaType.IMAGE_SVG_VALUE),
     DOC("doc", Constant.MediaType.PDF_VALUE),
     DOCX("docx", Constant.MediaType.PDF_VALUE),
+    XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
+    XLS("xls", Constant.MediaType.IMAGE_SVG_VALUE),
     PDF("pdf", Constant.MediaType.PDF_VALUE),
     TXT("txt", Constant.MediaType.TXT_VALUE),
     JPG("jpg", Constant.MediaType.IMAGE_JPEG_VALUE),
@@ -29,6 +31,8 @@ public enum StrategyTypeEnum {
     public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, PDF, TXT);
 
     public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);
+
+    public static final List<StrategyTypeEnum> EXCEL_TYPES = Arrays.asList(XLS, XLSX);
 
     public static final List<StrategyTypeEnum> CAD_TYPES = Arrays.asList(DWG);
 

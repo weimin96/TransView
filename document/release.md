@@ -4,6 +4,6 @@
 
 支持格式：
 - 图片：jpg、jpeg、png、gif
-- 文档：doc、docx、pdf
+- 文档：pdf、xls、xlsx
 - 文本：txt
 - CAD：dwg

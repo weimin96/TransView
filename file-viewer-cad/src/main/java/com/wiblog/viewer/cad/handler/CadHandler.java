@@ -8,7 +8,7 @@ import com.aspose.cad.imageoptions.SvgOptions;
 import com.wiblog.viewer.core.common.Constant;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
 import com.wiblog.viewer.core.handler.ViewerHandler;
-import com.wiblog.viewer.cad.utils.SVGUtil;
+import com.wiblog.viewer.core.utils.SVGUtil;
 
 import javax.servlet.ServletOutputStream;
 import java.io.ByteArrayInputStream;
@@ -65,7 +65,7 @@ public class CadHandler extends ViewerHandler {
         byte[] byteArray = byteOutputStream.toByteArray();
         ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteArray);
 
-        String transformedXml = SVGUtil.cropSvgString(svgInputStream, 100);
+        String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_CAD);
         outputStream.write(transformedXml.getBytes());
     }
 }

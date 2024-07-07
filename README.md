@@ -2,7 +2,7 @@
 
 [![Java CI](https://github.com/weimin96/file-viewer-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/weimin96/file-viewer-tool/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/weimin96/file-viewer-tool)](https://github.com/weimin96/file-viewer-tool/releases/)
-[![Maven Central Version](https://img.shields.io/maven-central/v/weimin96/file-viewer-tool)](https://repo1.maven.org/maven2/io/github/weimin96/file-viewer-tool/)
+[![Maven Central Version](https://img.shields.io/maven-central/v/weimin96/file-viewer-tool)](https://repo1.maven.org/maven2/io/github/weimin96/file-viewer-all//)
 [![GitHub repo size](https://img.shields.io/github/repo-size/weimin96/file-viewer-tool)](https://github.com/weimin96/file-viewer-tool/releases/)
 [![License](https://img.shields.io/:license-apache-brightgreen.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![Last Commit](https://img.shields.io/github/last-commit/weimin96/file-viewer-tool.svg)](https://github.com/weimin96/file-viewer-tool)
@@ -17,16 +17,17 @@ Universal tool for online document preview. Based on the Spring Boot framework a
 Supported formats:
 
 * Images: jpg, jpeg, png, gif
-* Documents: doc, docx, pdf
+* Documents: doc, docx, pdf、xls、xlsx
 * Text: txt
 * CAD: dwg
 
 ## Supported components:
 
-| components Name    | Description                                                                  |
-|--------------------|---------------------------------------------------------------------|
-| `file-viewer-core` | Core package comprising file preview entry points and generic file handling logic.                                              |
-| `file-viewer-cad`  | CAD format processing module                                                          |
+| components Name    | Description                                                                                                  |
+|--------------------|--------------------------------------------------------------------------------------------------------------|
+| `file-viewer-core` | Core package comprising file preview entry points and generic file handling logic.(txt、pdf、jpg、jpeg、png、gif) |
+| `file-viewer-cad`  | CAD format processing module (dwg)                                                                           |
+| `file-viewer-poi`  | document format processing module (doc、docx、xls、xlsx)                                                        
 
 You can individually import each module according to your needs, or you can import all modules collectively by using the `file-viewer-all` package.
 
@@ -60,6 +61,15 @@ cad module
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>file-viewer-cad</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+```
+
+poi module
+```xml
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>file-viewer-poi</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```

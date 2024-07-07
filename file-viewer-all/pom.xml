@@ -25,6 +25,11 @@
             <groupId>io.github.weimin96</groupId>
             <artifactId>file-viewer-cad</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>file-viewer-poi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
