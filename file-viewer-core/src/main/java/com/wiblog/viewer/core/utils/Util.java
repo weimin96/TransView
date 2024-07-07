@@ -1,5 +1,6 @@
 package com.wiblog.viewer.core.utils;
 
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -35,6 +36,7 @@ public class Util {
         }
     }
 
+
     /**
      * 截取文件拓展名
      * @param path 文件路径
@@ -45,7 +47,20 @@ public class Util {
         if (lastIndex != -1 && lastIndex < path.length() - 1) {
             return path.substring(lastIndex + 1).toLowerCase();
         } else {
+            return null;
+        }
+    }
+
+    /**
+     * 截取文件拓展名
+     * @param path 文件路径
+     * @return ext
+     */
+    public static String getExtensionOrFilename(String path) {
+        String extension = getExtension(path);
+        if (extension == null) {
             return path;
         }
+        return extension;
     }
 }

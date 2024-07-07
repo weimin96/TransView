@@ -68,7 +68,7 @@ public abstract class ViewerHandler {
      */
     public void preview(InputStream inputStream, String filenameOrExtension) {
         check(filenameOrExtension);
-        handlerResponse(inputStream, Util.getExtension(filenameOrExtension));
+        handlerResponse(inputStream, Util.getExtensionOrFilename(filenameOrExtension));
     }
 
     /**
@@ -76,7 +76,7 @@ public abstract class ViewerHandler {
      * @param multipartFile 文件
      */
     public void preview(MultipartFile multipartFile) {
-        String extension = Util.getExtension(multipartFile.getName());
+        String extension = Util.getExtensionOrFilename(multipartFile.getName());
         check(extension);
         try {
             handlerResponse(multipartFile.getInputStream(), extension);
@@ -90,7 +90,7 @@ public abstract class ViewerHandler {
      * @param file 文件
      */
     public void preview(File file) {
-        String extension = Util.getExtension(file.getName());
+        String extension = Util.getExtensionOrFilename(file.getName());
         check(extension);
         try {
             handlerResponse(Files.newInputStream(file.toPath()), extension);
@@ -104,7 +104,7 @@ public abstract class ViewerHandler {
      * @param filenameOrExtension 文件名或后缀
      */
     protected void check(String filenameOrExtension) {
-        String extension = Util.getExtension(filenameOrExtension);
+        String extension = Util.getExtensionOrFilename(filenameOrExtension);
         boolean valid = strategyTypeEnums().contains(StrategyTypeEnum.getStrategy(extension));
         if (!valid) {
             throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);

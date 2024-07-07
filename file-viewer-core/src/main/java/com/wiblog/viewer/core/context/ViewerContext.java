@@ -3,10 +3,12 @@ package com.wiblog.viewer.core.context;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
 import com.wiblog.viewer.core.handler.ViewerHandler;
 import com.wiblog.viewer.core.utils.Util;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -53,11 +55,41 @@ public class ViewerContext {
         if (extension == null) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        extension = extension.toLowerCase();
         try (FileInputStream inputStream = new FileInputStream(file)) {
             createStrategy(extension).preview(inputStream, extension);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 文件预览入口
+     *
+     * @param file 文件
+     */
+    public static void preview(MultipartFile file) {
+        String extension = Util.getExtension(file.getName());
+        if (extension == null) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        try (InputStream inputStream = file.getInputStream()) {
+            createStrategy(extension).preview(inputStream, extension);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 文件预览入口
+     *
+     * @param inputStream 文件流
+     * @param filename 文件名
+     */
+    public static void preview(InputStream inputStream, String filename) {
+        String extension = Util.getExtension(filename);
+        if (extension == null) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        createStrategy(extension).preview(inputStream, extension);
     }
 }
