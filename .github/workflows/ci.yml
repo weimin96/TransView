@@ -76,7 +76,11 @@ jobs:
             echo "version_changed=true" >> $GITHUB_ENV
           fi
       # 将打包好的 Jar 包 放到 staging 文件夹
-      - run: mkdir staging && cp target/*.jar staging
+      - run: |
+          mkdir staging 
+          cp file-viewer-all/target/*.jar staging
+          cp file-viewer-core/target/*.jar staging
+          cp file-viewer-cad/target/*.jar staging
       # 发布release
       - uses: ncipollo/release-action@v1
         if: env.version_changed == 'true'
