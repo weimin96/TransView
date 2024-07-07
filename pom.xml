@@ -6,7 +6,7 @@
 
     <groupId>io.github.weimin96</groupId>
     <artifactId>file-viewer-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <name>file-viewer</name>
     <description>file viewer tool 是一个小型的文件预览工具。</description>
