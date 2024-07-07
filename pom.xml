@@ -2,12 +2,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <packaging>pom</packaging>
+
     <groupId>io.github.weimin96</groupId>
-    <artifactId>file-viewer-tool</artifactId>
+    <artifactId>file-viewer-parent</artifactId>
     <version>1.0.0</version>
-    <packaging>jar</packaging>
-    <name>file-viewer-tool</name>
-    <description>file-viewer-tool.</description>
+
+    <name>file-viewer</name>
+    <description>file viewer tool 是一个小型的文件预览工具。</description>
     <url>https://github.com/weimin96/file-viewer-tool</url>
 
     <licenses>
@@ -17,6 +19,12 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <modules>
+        <module>file-viewer-all</module>
+        <module>file-viewer-core</module>
+        <module>file-viewer-cad</module>
+    </modules>
 
     <scm>
         <url>
@@ -40,68 +48,12 @@
     </developers>
 
     <properties>
+        <Automatic-Module-Name>com.wiblog.viewer</Automatic-Module-Name>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.7.14</spring-boot.version>
-        <aspose-cad.version>24.3</aspose-cad.version>
-        <batik.version>1.14</batik.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <itext.version>8.0.2</itext.version>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring-boot.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- cad解析 -->
-        <dependency>
-            <groupId>com.aspose</groupId>
-            <artifactId>aspose-cad</artifactId>
-            <version>${aspose-cad.version}</version>
-        </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.aspose</groupId>-->
-<!--            <artifactId>aspose-words</artifactId>-->
-<!--            <version>15.8.0</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${basedir}/lib/aspose-words-15.8.0-jdk16.jar</systemPath>-->
-<!--        </dependency>-->
-
-        <!-- svg解析 -->
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-transcoder</artifactId>
-            <version>${batik.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-codec</artifactId>
-            <version>${batik.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-dom</artifactId>
-            <version>${batik.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-svggen</artifactId>
-            <version>${batik.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-xml</artifactId>
-            <version>${batik.version}</version>
-        </dependency>
-
-    </dependencies>
 
     <repositories>
         <repository>
@@ -143,7 +95,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <autoPublish>true</autoPublish>
+                            <!--                            <autoPublish>true</autoPublish>-->
                         </configuration>
                     </plugin>
 
@@ -219,25 +171,29 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-dependency-plugin</artifactId>-->
-<!--                <version>3.1.2</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>copy-dependencies</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>copy-dependencies</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <outputDirectory>${project.build.directory}/lib</outputDirectory>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <index>true</index>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Build-OS>${os.name}</Build-OS>
+                            <Built-By>${user.name}</Built-By>
+                            <Build-Jdk>${java.version}</Build-Jdk>
+                            <Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+                            <Automatic-Module-Name>${Automatic-Module-Name}</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
