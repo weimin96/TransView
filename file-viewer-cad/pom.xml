@@ -7,19 +7,12 @@
     <parent>
         <groupId>io.github.weimin96</groupId>
         <artifactId>file-viewer-parent</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>file-viewer-cad</artifactId>
     <name>${project.artifactId}</name>
     <description>cad 处理核心包</description>
-
-    <properties>
-        <Automatic-Module-Name>com.wiblog.viewer.core</Automatic-Module-Name>
-        <spring-boot.version>2.7.14</spring-boot.version>
-        <aspose-cad.version>24.3</aspose-cad.version>
-        <batik.version>1.14</batik.version>
-    </properties>
 
     <dependencies>
 
@@ -27,13 +20,11 @@
             <groupId>io.github.weimin96</groupId>
             <artifactId>file-viewer-core</artifactId>
             <scope>provided</scope>
-            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring-boot.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -41,34 +32,28 @@
         <dependency>
             <groupId>com.aspose</groupId>
             <artifactId>aspose-cad</artifactId>
-            <version>${aspose-cad.version}</version>
         </dependency>
 
         <!-- svg解析 -->
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-codec</artifactId>
-            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-dom</artifactId>
-            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-svggen</artifactId>
-            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-xml</artifactId>
-            <version>${batik.version}</version>
         </dependency>
     </dependencies>
 </project>
