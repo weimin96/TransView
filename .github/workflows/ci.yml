@@ -64,7 +64,7 @@ jobs:
             LAST_VERSION=$(git describe --tags `git rev-list --tags --max-count=1`)
             echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_ENV
           else
-            echo '0' >> $GITHUB_ENV
+            echo "LAST_VERSION=0" >> $GITHUB_ENV
           fi
       # 监听版本变化
       - name: Check if version changed
