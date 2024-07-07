@@ -59,7 +59,8 @@ jobs:
       - name: Get latest tag
         id: get-latest-tag
         run: |
-          if [ LAST_TAG_ID=$(git rev-list --tags --max-count=1) ]; then
+          LAST_TAG_ID=$(git rev-list --tags --max-count=1)
+          if [ $LAST_TAG_ID != null ]; then
             LAST_VERSION=$(git describe --tags `git rev-list --tags --max-count=1`)
             echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_ENV
           else
