@@ -7,6 +7,7 @@ import com.aspose.cad.imageoptions.CadRasterizationOptions;
 import com.aspose.cad.imageoptions.SvgOptions;
 import com.wiblog.viewer.core.common.Constant;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
+import com.wiblog.viewer.core.config.FileViewerProperties;
 import com.wiblog.viewer.core.handler.ViewerHandler;
 import com.wiblog.viewer.core.utils.SVGUtil;
 
@@ -27,11 +28,7 @@ public class CadHandler extends ViewerHandler {
 
     @Override
     public void handler(InputStream inputStream, ServletOutputStream outputStream, String extension) throws Exception {
-        if (StrategyTypeEnum.DWG.getType().equals(extension)) {
-            convertToSvgForResponse(inputStream, outputStream);
-        } else {
-            throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);
-        }
+        convertToSvgForResponse(inputStream, outputStream);
     }
 
     @Override
@@ -54,6 +51,10 @@ public class CadHandler extends ViewerHandler {
         rasterOptions.setPageWidth(1400);
         rasterOptions.setPageHeight(1400);
         rasterOptions.setBackgroundColor(Color.getWhite());
+        // shx字体目录
+        if (FileViewerProperties.getShxFontsFolder() != null) {
+            rasterOptions.setShxFonts(FileViewerProperties.getShxFontsFolder());
+        }
 
         SvgOptions svgOptions = new SvgOptions();
         svgOptions.setVectorRasterizationOptions(rasterOptions);

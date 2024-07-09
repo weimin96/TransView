@@ -16,17 +16,18 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 支持格式：
 - 图片：jpg、jpeg、png、gif
-- 文档：doc、docx、pdf、xls、xlsx
-- 文本：txt
-- CAD：dwg
+- 文档：doc、docx、pdf、xls、xlsx、csv
+- 文本：txt、json、htmL
+- 视频：mp4、avi
+- CAD：dwg、dxf
 
 ## 包含组件
 
-| 组件名                | 描述                                              |
-|--------------------|-------------------------------------------------|
-| `file-viewer-core` | 核心包，包含文件预览入口和普通文件处理逻辑（txt、pdf、jpg、jpeg、png、gif） |
-| `file-viewer-cad`  | cad 格式处理模块（dwg）                                 |
-| `file-viewer-poi`  | 文档格式处理模块（doc、docx、xls、xlsx）                     
+| 组件名                | 描述                                                               |
+|--------------------|------------------------------------------------------------------|
+| `file-viewer-core` | 核心包，包含文件预览入口和普通文件处理逻辑（txt、json、csv、htmL、pdf、jpg、jpeg、png、gif、mp4、avi） |
+| `file-viewer-cad`  | cad 格式处理模块（dwg、dxf）                                              |
+| `file-viewer-poi`  | 文档格式处理模块（doc、docx、xls、xlsx）                                  
 
 可以根据需求对每个模块单独引入，也可以通过引入 `file-viewer-all` 方式引入所有模块
 

@@ -20,6 +20,10 @@ public class Constant {
 
         String VIDEO_MP4_VALUE = "video/mp4";
 
+        String VIDEO_AVI_VALUE = "video/x-msvideo";
+
+        String HTML_VALUE = "text/html";
+
         String PDF_VALUE = "application/pdf";
 
         String TXT_VALUE = "text/plain";

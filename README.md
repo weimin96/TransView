@@ -16,17 +16,18 @@ Universal tool for online document preview. Based on the Spring Boot framework a
 
 Supported formats:
 
-* Images: jpg, jpeg, png, gif
-* Documents: doc, docx, pdf、xls、xlsx
-* Text: txt
-* CAD: dwg
+* Images: jpg、jpeg、png、gif
+* Documents: doc、docx、pdf、xls、xlsx、csv
+* Text: txt、json、htmL
+* Video: mp4、avi
+* CAD: dwg、dxf
 
 ## Supported components:
 
 | components Name    | Description                                                                                                  |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
-| `file-viewer-core` | Core package comprising file preview entry points and generic file handling logic.(txt、pdf、jpg、jpeg、png、gif) |
-| `file-viewer-cad`  | CAD format processing module (dwg)                                                                           |
+| `file-viewer-core` | Core package comprising file preview entry points and generic file handling logic.(txt、json、csv、htmL、pdf、jpg、jpeg、png、gif、mp4、avi) |
+| `file-viewer-cad`  | CAD format processing module (dwg、dxf)                                                                       |
 | `file-viewer-poi`  | document format processing module (doc、docx、xls、xlsx)                                                        
 
 You can individually import each module according to your needs, or you can import all modules collectively by using the `file-viewer-all` package.

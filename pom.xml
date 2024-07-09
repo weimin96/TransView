@@ -26,10 +26,11 @@
         <module>file-viewer-core</module>
         <module>file-viewer-cad</module>
         <module>file-viewer-poi</module>
+        <module>file-viewer-test</module>
     </modules>
 
     <properties>
-        <revision>1.2.1</revision>
+        <revision>1.2.2</revision>
         <spring-boot.version>2.7.14</spring-boot.version>
         <aspose-cad.version>24.3</aspose-cad.version>
         <aspose-excel.version>24.6</aspose-excel.version>
@@ -67,6 +68,11 @@
     <dependencyManagement>
         <dependencies>
             <!--模块-->
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>file-viewer-all</artifactId>
+                <version>${revision}</version>
+            </dependency>
             <dependency>
                 <groupId>io.github.weimin96</groupId>
                 <artifactId>file-viewer-core</artifactId>

@@ -5,12 +5,15 @@ import com.wiblog.viewer.core.common.Constant;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
 import com.wiblog.viewer.core.handler.ViewerHandler;
 import com.wiblog.viewer.core.utils.SVGUtil;
+import com.wiblog.viewer.core.utils.Util;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -50,6 +53,12 @@ public class ExcelHandler extends ViewerHandler {
         // 获取当前工作表
         Worksheet sheet = workbook.getWorksheets().get(0);
 
+        // 检查工作表是否为空
+        if (sheet.getCells().getMaxRow() == -1 && sheet.getCells().getMaxColumn() == -1) {
+            handleEmptyExcel(Util.getResponse());
+            return;
+        }
+
         // 创建图像或打印选项
         ImageOrPrintOptions options = new ImageOrPrintOptions();
         options.setSaveFormat(SaveFormat.SVG);
@@ -60,10 +69,18 @@ public class ExcelHandler extends ViewerHandler {
         ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
         sr.toImage(0, byteOutputStream);
 
+
         byte[] byteArray = byteOutputStream.toByteArray();
         ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteArray);
 
         String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_EXCEL);
         outputStream.write(transformedXml.getBytes());
+    }
+
+    private static void handleEmptyExcel(HttpServletResponse response) throws IOException {
+        String emptySvg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' background='#ffffff'><text x='10' y='20'>No Data</text></svg>";
+        response.setContentType("image/svg+xml");
+        response.setContentLength(emptySvg.length());
+        response.getOutputStream().write(emptySvg.getBytes(StandardCharsets.UTF_8));
     }
 }

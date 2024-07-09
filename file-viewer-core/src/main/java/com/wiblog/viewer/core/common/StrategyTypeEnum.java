@@ -12,12 +12,18 @@ import java.util.List;
 public enum StrategyTypeEnum {
 
     DWG("dwg", Constant.MediaType.IMAGE_SVG_VALUE),
+    DXF("dxf", Constant.MediaType.IMAGE_SVG_VALUE),
     DOC("doc", Constant.MediaType.PDF_VALUE),
     DOCX("docx", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
     XLS("xls", Constant.MediaType.IMAGE_SVG_VALUE),
     PDF("pdf", Constant.MediaType.PDF_VALUE),
     TXT("txt", Constant.MediaType.TXT_VALUE),
+    CSV("csv", Constant.MediaType.TXT_VALUE),
+    JSON("json", Constant.MediaType.JSON_VALUE),
+    HTML("html", Constant.MediaType.HTML_VALUE),
+    MP4("mp4", Constant.MediaType.VIDEO_MP4_VALUE),
+    AVI("avi", Constant.MediaType.VIDEO_AVI_VALUE),
     JPG("jpg", Constant.MediaType.IMAGE_JPEG_VALUE),
     JPEG("jpeg", Constant.MediaType.IMAGE_JPEG_VALUE),
     PNG("png", Constant.MediaType.IMAGE_PNG_VALUE),
@@ -28,13 +34,13 @@ public enum StrategyTypeEnum {
 
     final String mediaType;
 
-    public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, PDF, TXT);
+    public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, PDF, TXT, JSON, CSV, HTML, MP4, AVI);
 
     public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);
 
     public static final List<StrategyTypeEnum> EXCEL_TYPES = Arrays.asList(XLS, XLSX);
 
-    public static final List<StrategyTypeEnum> CAD_TYPES = Arrays.asList(DWG);
+    public static final List<StrategyTypeEnum> CAD_TYPES = Arrays.asList(DWG, DXF);
 
     StrategyTypeEnum(String type, String mediaType) {
         this.type = type;
