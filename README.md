@@ -2,7 +2,7 @@
 
 [![Java CI](https://github.com/weimin96/file-viewer-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/weimin96/file-viewer-tool/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/weimin96/file-viewer-tool)](https://github.com/weimin96/file-viewer-tool/releases/)
-[![Maven Central Version](https://img.shields.io/maven-central/v/weimin96/file-viewer-tool)](https://repo1.maven.org/maven2/io/github/weimin96/file-viewer-all//)
+[![Maven Central Version](https://img.shields.io/maven-central/v/weimin96/file-viewer-tool)](https://repo1.maven.org/maven2/io/github/weimin96/file-viewer-all/)
 [![GitHub repo size](https://img.shields.io/github/repo-size/weimin96/file-viewer-tool)](https://github.com/weimin96/file-viewer-tool/releases/)
 [![License](https://img.shields.io/:license-apache-brightgreen.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![Last Commit](https://img.shields.io/github/last-commit/weimin96/file-viewer-tool.svg)](https://github.com/weimin96/file-viewer-tool)

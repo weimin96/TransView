@@ -28,6 +28,21 @@
         <module>file-viewer-poi</module>
     </modules>
 
+    <properties>
+        <revision>1.2.1</revision>
+        <spring-boot.version>2.7.14</spring-boot.version>
+        <aspose-cad.version>24.3</aspose-cad.version>
+        <aspose-excel.version>24.6</aspose-excel.version>
+        <batik.version>1.14</batik.version>
+        <commons-io.version>1.3.1</commons-io.version>
+        <maven.flatten.version>1.3.0</maven.flatten.version>
+        <java.version>1.8</java.version>
+
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <scm>
         <url>
             https://github.com/weimin96/file-viewer-tool
@@ -48,21 +63,6 @@
             <timezone>+8</timezone>
         </developer>
     </developers>
-
-    <properties>
-        <revision>1.2.0</revision>
-        <spring-boot.version>2.7.14</spring-boot.version>
-        <aspose-cad.version>24.3</aspose-cad.version>
-        <aspose-excel.version>24.6</aspose-excel.version>
-        <batik.version>1.14</batik.version>
-        <commons-io.version>1.3.1</commons-io.version>
-        <maven.flatten.version>1.3.0</maven.flatten.version>
-        <java.version>1.8</java.version>
-
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencyManagement>
         <dependencies>

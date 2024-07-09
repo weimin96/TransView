@@ -81,6 +81,7 @@ public class SVGUtil {
     private static void removeWatermarkForCad(Document doc) {
         // 获取根元素
         Element svgRoot = doc.getDocumentElement();
+        svgRoot.setAttribute("background", "#ffffff");
         // 获取根元素下的直接子节点
         NodeList childNodes = svgRoot.getChildNodes();
 
