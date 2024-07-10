@@ -4,8 +4,9 @@ import com.aspose.cad.Color;
 import com.aspose.cad.Image;
 import com.aspose.cad.fileformats.cad.CadImage;
 import com.aspose.cad.imageoptions.CadRasterizationOptions;
+import com.aspose.cad.imageoptions.PdfOptions;
 import com.aspose.cad.imageoptions.SvgOptions;
-import com.wiblog.viewer.core.common.Constant;
+import com.wiblog.viewer.cad.utils.PdfUtil;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
 import com.wiblog.viewer.core.config.FileViewerProperties;
 import com.wiblog.viewer.core.handler.ViewerHandler;
@@ -28,13 +29,49 @@ public class CadHandler extends ViewerHandler {
 
     @Override
     public void handler(InputStream inputStream, ServletOutputStream outputStream, String extension) throws Exception {
-        convertToSvgForResponse(inputStream, outputStream);
+        convertToPdfForResponse(inputStream, outputStream);
     }
 
     @Override
     public List<StrategyTypeEnum> strategyTypeEnums() {
         return StrategyTypeEnum.CAD_TYPES;
     }
+
+    /**
+     * dwg转换pdf
+     *
+     * @param inputStream  输入流
+     * @param outputStream 输出流
+     * @throws IOException 异常
+     */
+    public static void convertToPdfForResponse(InputStream inputStream, ServletOutputStream outputStream) throws IOException {
+        CadImage cadImage = (CadImage) Image.load(inputStream);
+
+        // Create an instance of PdfOptions
+        PdfOptions pdfOptions = new PdfOptions();
+
+        // 设置转换选项
+        CadRasterizationOptions rasterizationOptions = new CadRasterizationOptions();
+        rasterizationOptions.setPageWidth(1600);
+        rasterizationOptions.setPageHeight(1600);
+        rasterizationOptions.setLayouts(new String[]{"Model"});
+        // shx字体目录
+        if (FileViewerProperties.getShxFontsFolder() != null) {
+            rasterizationOptions.setShxFonts(FileViewerProperties.getShxFontsFolder());
+        }
+        // Set rasterization options
+        pdfOptions.setVectorRasterizationOptions(rasterizationOptions);
+
+        // 将 CadImage 转换为 byteOutputStream
+        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+        cadImage.save(byteOutputStream, pdfOptions);
+//
+        byte[] byteArray = byteOutputStream.toByteArray();
+        ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteArray);
+
+        PdfUtil.removeWatermark(pdfInputStream, outputStream);
+    }
+
 
     /**
      * dwg转换svg

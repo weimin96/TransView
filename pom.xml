@@ -30,7 +30,7 @@
     </modules>
 
     <properties>
-        <revision>1.2.2</revision>
+        <revision>1.2.3</revision>
         <spring-boot.version>2.7.14</spring-boot.version>
         <aspose-cad.version>24.3</aspose-cad.version>
         <aspose-excel.version>24.6</aspose-excel.version>

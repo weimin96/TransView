@@ -11,8 +11,8 @@ import java.util.List;
  */
 public enum StrategyTypeEnum {
 
-    DWG("dwg", Constant.MediaType.IMAGE_SVG_VALUE),
-    DXF("dxf", Constant.MediaType.IMAGE_SVG_VALUE),
+    DWG("dwg", Constant.MediaType.PDF_VALUE),
+    DXF("dxf", Constant.MediaType.PDF_VALUE),
     DOC("doc", Constant.MediaType.PDF_VALUE),
     DOCX("docx", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
