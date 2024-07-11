@@ -2,6 +2,7 @@ package com.wiblog.viewer.core.handler;
 
 import com.wiblog.viewer.core.common.Constant;
 import com.wiblog.viewer.core.common.StrategyTypeEnum;
+import com.wiblog.viewer.core.config.FileViewerProperties;
 import com.wiblog.viewer.core.utils.Util;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * describe: 预览处理抽象类
@@ -54,21 +55,50 @@ public abstract class ViewerHandler {
         HttpServletResponse response = Util.getResponse();
         // 设置 HttpServletResponse 的内容类型和输出
         response.setCharacterEncoding("UTF-8");
+        ServletOutputStream outputStream = null;
         try {
-            ServletOutputStream outputStream = response.getOutputStream();
-            handler(inputStream, outputStream, extension);
-            response.setContentType(StrategyTypeEnum.getMediaType(extension));
-            response.flushBuffer();
-        } catch (TimeoutException e) {
-            try {
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.setHeader("content-type","text/html;charset=utf-8");
-                ServletOutputStream outputStream = response.getOutputStream();
-                // 文件不存在
-                outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes());
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+            outputStream = response.getOutputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        handlerResponse(inputStream, outputStream, extension, response);
+    }
+
+    private void handlerResponse(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) {
+        try {
+            // 超时设置
+            if (FileViewerProperties.getTimeout() != null) {
+                // Set up a thread pool with a single thread
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+
+                // Callable task for CAD to PDF conversion
+                Callable<Void> conversionTask = () -> {
+                    try {
+                        handler(inputStream, outputStream, extension);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                    return null;
+                };
+                // 超时取消
+                Future<Void> future = executor.submit(conversionTask);
+                try {
+                    future.get(FileViewerProperties.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                } catch (TimeoutException e) {
+                    future.cancel(true);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    response.setContentType(Constant.MediaType.HTML_VALUE);
+                    // 文件不存在
+                    outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes());
+                } finally {
+                    executor.shutdown();
+                }
+            } else {
+                handler(inputStream, outputStream, extension);
+                response.setContentType(StrategyTypeEnum.getMediaType(extension));
             }
+            response.flushBuffer();
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
         }

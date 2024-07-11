@@ -5,6 +5,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -31,6 +32,18 @@ public class Util {
     public static HttpServletResponse getResponse() {
         try {
             return getRequestAttributes().getResponse();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取请求体
+     * @return Response
+     */
+    public static HttpServletRequest getRequest() {
+        try {
+            return getRequestAttributes().getRequest();
         } catch (Exception e) {
             return null;
         }

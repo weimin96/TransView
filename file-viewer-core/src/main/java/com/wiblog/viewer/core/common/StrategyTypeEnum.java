@@ -1,5 +1,7 @@
 package com.wiblog.viewer.core.common;
 
+import com.wiblog.viewer.core.config.FileViewerProperties;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,8 +13,8 @@ import java.util.List;
  */
 public enum StrategyTypeEnum {
 
-    DWG("dwg", Constant.MediaType.PDF_VALUE),
-    DXF("dxf", Constant.MediaType.PDF_VALUE),
+    DWG("dwg", FileViewerProperties.Cad.getConvertType() == CadConvertType.PDF ? Constant.MediaType.PDF_VALUE : Constant.MediaType.IMAGE_SVG_VALUE),
+    DXF("dxf", FileViewerProperties.Cad.getConvertType() == CadConvertType.PDF ? Constant.MediaType.PDF_VALUE : Constant.MediaType.IMAGE_SVG_VALUE),
     DOC("doc", Constant.MediaType.PDF_VALUE),
     DOCX("docx", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
