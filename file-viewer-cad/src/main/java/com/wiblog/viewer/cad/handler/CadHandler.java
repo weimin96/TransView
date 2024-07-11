@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * CAD 工具类
@@ -44,9 +45,14 @@ public class CadHandler extends ViewerHandler {
      * @param outputStream 输出流
      * @throws IOException 异常
      */
-    public static void convertToPdfForResponse(InputStream inputStream, ServletOutputStream outputStream) throws IOException {
+    public static void convertToPdfForResponse(InputStream inputStream, ServletOutputStream outputStream) throws Exception {
         CadImage cadImage = (CadImage) Image.load(inputStream);
 
+
+        if (FileViewerProperties.getTimeout() != 0) {
+            handlerExecutor(cadImage, outputStream);
+            return;
+        }
         // Create an instance of PdfOptions
         PdfOptions pdfOptions = new PdfOptions();
 
@@ -61,15 +67,58 @@ public class CadHandler extends ViewerHandler {
         }
         // Set rasterization options
         pdfOptions.setVectorRasterizationOptions(rasterizationOptions);
-
         // 将 CadImage 转换为 byteOutputStream
         ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
         cadImage.save(byteOutputStream, pdfOptions);
-//
         byte[] byteArray = byteOutputStream.toByteArray();
         ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteArray);
-
         PdfUtil.removeWatermark(pdfInputStream, outputStream);
+    }
+
+    public static void handlerExecutor(CadImage cadImage, ServletOutputStream outputStream) throws Exception {
+        // Set up a thread pool with a single thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        // Callable task for CAD to PDF conversion
+        Callable<Void> conversionTask = () -> {
+            // Create an instance of PdfOptions
+            PdfOptions pdfOptions = new PdfOptions();
+
+            // 设置转换选项
+            CadRasterizationOptions rasterizationOptions = new CadRasterizationOptions();
+            rasterizationOptions.setPageWidth(1600);
+            rasterizationOptions.setPageHeight(1600);
+            rasterizationOptions.setLayouts(new String[]{"Model"});
+            // shx字体目录
+            if (FileViewerProperties.getShxFontsFolder() != null) {
+                rasterizationOptions.setShxFonts(FileViewerProperties.getShxFontsFolder());
+            }
+            // Set rasterization options
+            pdfOptions.setVectorRasterizationOptions(rasterizationOptions);
+            // 将 CadImage 转换为 byteOutputStream
+            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+            try {
+                cadImage.save(byteOutputStream, pdfOptions);
+                byte[] byteArray = byteOutputStream.toByteArray();
+                ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteArray);
+                PdfUtil.removeWatermark(pdfInputStream, outputStream);
+                return null;
+            } catch (Exception ignore) {
+                return null;
+            }
+        };
+
+        // Submit the task and get a Future object
+        Future<Void> future = executor.submit(conversionTask);
+
+        try {
+            future.get(FileViewerProperties.getTimeout(), TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new TimeoutException();
+        } finally {
+            executor.shutdown();
+        }
     }
 
 

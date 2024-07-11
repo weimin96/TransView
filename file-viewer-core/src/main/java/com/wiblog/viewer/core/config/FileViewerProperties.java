@@ -17,6 +17,11 @@ public class FileViewerProperties {
      */
     private static String[] shxFontsFolder;
 
+    /**
+     * 超时
+     */
+    private static long timeout;
+
     public static String getFontsFolder() {
         return fontsFolder;
     }
@@ -34,5 +39,13 @@ public class FileViewerProperties {
      */
     public static void setShxFontsFolder(String[] shxFontsFolder) {
         FileViewerProperties.shxFontsFolder = shxFontsFolder;
+    }
+
+    public static long getTimeout() {
+        return timeout;
+    }
+
+    public static void setTimeout(long timeout) {
+        FileViewerProperties.timeout = timeout;
     }
 }

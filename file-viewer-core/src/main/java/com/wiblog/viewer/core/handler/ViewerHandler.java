@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * describe: 预览处理抽象类
@@ -27,6 +28,7 @@ public abstract class ViewerHandler {
 
     /**
      * 支持的策略枚举列表
+     *
      * @return List 策略枚举列表
      */
     public abstract List<StrategyTypeEnum> strategyTypeEnums();
@@ -34,9 +36,9 @@ public abstract class ViewerHandler {
     /**
      * 文件写入到 HttpServletResponse
      *
-     * @param inputStream 文件流
+     * @param inputStream  文件流
      * @param outputStream HttpServletResponse 输出流
-     * @param extension   文件后缀
+     * @param extension    文件后缀
      * @throws Exception 异常
      */
     public abstract void handler(InputStream inputStream, ServletOutputStream outputStream, String extension) throws Exception;
@@ -44,18 +46,29 @@ public abstract class ViewerHandler {
 
     /**
      * 处理响应结果
+     *
      * @param inputStream 文件流
-     * @param extension 文件后缀
+     * @param extension   文件后缀
      */
     public void handlerResponse(InputStream inputStream, String extension) {
         HttpServletResponse response = Util.getResponse();
         // 设置 HttpServletResponse 的内容类型和输出
-        response.setContentType(StrategyTypeEnum.getMediaType(extension));
         response.setCharacterEncoding("UTF-8");
         try {
             ServletOutputStream outputStream = response.getOutputStream();
             handler(inputStream, outputStream, extension);
+            response.setContentType(StrategyTypeEnum.getMediaType(extension));
             response.flushBuffer();
+        } catch (TimeoutException e) {
+            try {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setHeader("content-type","text/html;charset=utf-8");
+                ServletOutputStream outputStream = response.getOutputStream();
+                // 文件不存在
+                outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
         }
@@ -63,7 +76,8 @@ public abstract class ViewerHandler {
 
     /**
      * 预览文件
-     * @param inputStream 文件流
+     *
+     * @param inputStream         文件流
      * @param filenameOrExtension 文件名或后缀
      */
     public void preview(InputStream inputStream, String filenameOrExtension) {
@@ -73,6 +87,7 @@ public abstract class ViewerHandler {
 
     /**
      * 预览文件
+     *
      * @param multipartFile 文件
      */
     public void preview(MultipartFile multipartFile) {
@@ -87,6 +102,7 @@ public abstract class ViewerHandler {
 
     /**
      * 预览文件
+     *
      * @param file 文件
      */
     public void preview(File file) {
@@ -101,6 +117,7 @@ public abstract class ViewerHandler {
 
     /**
      * 检查文件类型是否合法
+     *
      * @param filenameOrExtension 文件名或后缀
      */
     protected void check(String filenameOrExtension) {
