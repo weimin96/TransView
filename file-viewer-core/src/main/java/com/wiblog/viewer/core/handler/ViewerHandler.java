@@ -69,13 +69,12 @@ public abstract class ViewerHandler {
         try {
             // 超时设置
             if (FileViewerProperties.getTimeout() != null) {
-                // Set up a thread pool with a single thread
                 ExecutorService executor = Executors.newSingleThreadExecutor();
-
-                // Callable task for CAD to PDF conversion
                 Callable<Void> conversionTask = () -> {
                     try {
+                        response.setContentType(StrategyTypeEnum.getMediaType(extension));
                         handler(inputStream, outputStream, extension);
+
                     } catch (Exception e) {
                         return null;
                     }
@@ -95,8 +94,8 @@ public abstract class ViewerHandler {
                     executor.shutdown();
                 }
             } else {
-                handler(inputStream, outputStream, extension);
                 response.setContentType(StrategyTypeEnum.getMediaType(extension));
+                handler(inputStream, outputStream, extension);
             }
             response.flushBuffer();
         } catch (Exception e) {

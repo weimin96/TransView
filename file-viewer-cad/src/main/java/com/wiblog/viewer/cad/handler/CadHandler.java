@@ -36,8 +36,8 @@ public class CadHandler extends ViewerHandler {
 
         // 设置转换选项
         CadRasterizationOptions rasterOptions = new CadRasterizationOptions();
-        rasterOptions.setPageWidth(cadImage.getWidth());
-        rasterOptions.setPageHeight(cadImage.getHeight());
+        rasterOptions.setPageWidth(2549);
+        rasterOptions.setPageHeight(1228);
         rasterOptions.setDrawType(CadDrawTypeMode.UseObjectColor);
         rasterOptions.setBackgroundColor(Color.getWhite());
         rasterOptions.setLayouts(new String[]{"Model"});
