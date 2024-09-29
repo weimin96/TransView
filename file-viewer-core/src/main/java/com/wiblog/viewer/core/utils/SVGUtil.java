@@ -1,6 +1,10 @@
 package com.wiblog.viewer.core.utils;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
+import org.apache.batik.transcoder.TranscoderException;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.image.PNGTranscoder;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -118,6 +122,54 @@ public class SVGUtil {
                 return;
             }
         }
+    }
+
+    /**
+     * svg转png
+     * @param svgFile svgFile路径
+     * @param pngFile pngFile 路径
+     * @param width 宽
+     * @param height 高
+     * @return boolean
+     */
+    public static boolean convertSvgToPng(String svgFile, String pngFile, float width, float height) {
+        PNGTranscoder transcoder = new PNGTranscoder();
+        transcoder.addTranscodingHint(PNGTranscoder.KEY_WIDTH, width);
+        transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, height);
+        return convertSvgToPng(svgFile, pngFile, transcoder);
+    }
+
+    /**
+     * svg转png
+     * @param svgFile svgFile路径
+     * @param pngFile pngFile 路径
+     * @return boolean
+     */
+    public static boolean convertSvgToPng(String svgFile, String pngFile) {
+        PNGTranscoder transcoder = new PNGTranscoder();
+        return convertSvgToPng(svgFile, pngFile, transcoder);
+    }
+
+    /**
+     * svg转png
+     * @param svgFile svgFile路径
+     * @param pngFile pngFile 路径
+     * @param transcoder 转换器
+     * @return boolean
+     */
+    public static boolean convertSvgToPng(String svgFile, String pngFile, PNGTranscoder transcoder) {
+        try (FileInputStream inputStream = new FileInputStream(svgFile);
+             FileOutputStream outputStream = new FileOutputStream(pngFile)) {
+
+            TranscoderInput input = new TranscoderInput(inputStream);
+            TranscoderOutput output = new TranscoderOutput(outputStream);
+
+            transcoder.transcode(input, output);
+        } catch (TranscoderException | IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
 }

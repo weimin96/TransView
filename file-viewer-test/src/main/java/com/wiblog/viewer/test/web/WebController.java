@@ -6,6 +6,7 @@ import com.wiblog.viewer.core.context.ViewerContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.time.Duration;
@@ -19,10 +20,9 @@ import java.time.Duration;
 public class WebController {
 
     @GetMapping("/preview")
-    public void preview(String path) {
-        File file = new File("C:\\Users\\pwm\\Downloads\\新建文件夹\\" + path);
-        FileViewerProperties.Cad.setConvertType(CadConvertType.PDF);
-        FileViewerProperties.setIsInterrupted(true);
+    public void preview(MultipartFile file) {
+        FileViewerProperties.Cad.setConvertType(CadConvertType.SVG);
+        FileViewerProperties.setTimeout(Duration.ofSeconds(60));
         ViewerContext.preview(file);
     }
 }
