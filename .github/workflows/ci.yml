@@ -5,7 +5,7 @@ on:
     tags-ignore:
       - '*'
     branches:
-      - 'main'
+      - 'jdk8'
 
 permissions:
   contents: read
