@@ -12,8 +12,8 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## support
 
-- jdk 11+
-- spring boot 3.x
+- jdk 8
+- spring boot 2.x
 
 ## Introduction
 
@@ -50,7 +50,7 @@ You can individually import each module according to your needs, or you can impo
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-all</artifactId>
+    <artifactId>transview-all-jdk8</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -61,7 +61,7 @@ core module(must)
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-core</artifactId>
+    <artifactId>transview-core-jdk8</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -70,7 +70,7 @@ cad module
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-cad</artifactId>
+    <artifactId>transview-cad-jdk8</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -79,7 +79,7 @@ poi module
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-poi</artifactId>
+    <artifactId>transview-poi-jdk8</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```

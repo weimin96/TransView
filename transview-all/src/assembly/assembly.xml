@@ -8,8 +8,9 @@
     <dependencySets>
         <dependencySet>
             <includes>
-                <include>io.github.weimin96:transview-cad</include>
-                <include>io.github.weimin96:transview-core</include>
+                <include>io.github.weimin96:transview-cad-jdk8</include>
+                <include>io.github.weimin96:transview-core-jdk8</include>
+                <include>io.github.weimin96:transview-poi-jdk8</include>
             </includes>
             <unpack>false</unpack>
             <useProjectArtifact>true</useProjectArtifact>

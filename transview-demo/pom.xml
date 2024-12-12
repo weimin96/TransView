@@ -3,18 +3,18 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.weimin96</groupId>
-        <artifactId>transview-parent</artifactId>
+        <artifactId>transview-parent-jdk8</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>transview-demo</artifactId>
+    <artifactId>transview-demo-jdk8</artifactId>
     <name>${project.artifactId}</name>
     <description>测试模块。</description>
-    <url>https://github.com/weimin96/transview-tool</url>
+    <url>https://github.com/weimin96/transview</url>
 
     <dependencies>
         <dependency>
             <groupId>io.github.weimin96</groupId>
-            <artifactId>transview-all</artifactId>
+            <artifactId>transview-all-jdk8</artifactId>
         </dependency>
 
         <!-- Test -->

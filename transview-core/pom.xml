@@ -8,19 +8,19 @@
 
     <parent>
         <groupId>io.github.weimin96</groupId>
-        <artifactId>transview-parent</artifactId>
+        <artifactId>transview-parent-jdk8</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>transview-core</artifactId>
+    <artifactId>transview-core-jdk8</artifactId>
     <name>${project.artifactId}</name>
     <description>核心包</description>
 
     <dependencies>
 
         <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
         </dependency>
 
         <dependency>

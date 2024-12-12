@@ -12,8 +12,8 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## 支持
 
-- jdk 11+
-- spring boot 3.x
+- jdk 8
+- spring boot 2.x
 
 ## 介绍
 

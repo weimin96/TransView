@@ -14,8 +14,8 @@ import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.SVGUtil;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
 import java.util.List;

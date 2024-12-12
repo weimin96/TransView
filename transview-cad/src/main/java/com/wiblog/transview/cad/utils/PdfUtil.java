@@ -1,6 +1,6 @@
 package com.wiblog.transview.cad.utils;
 
-import jakarta.servlet.ServletOutputStream;
+import javax.servlet.ServletOutputStream;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.*;
