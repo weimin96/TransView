@@ -10,6 +10,11 @@
 
 README: [English](README.md) | [中文](README-zh-CN.md)
 
+## support
+
+- jdk 11+
+- spring boot 3.x
+
 ## Introduction
 
 A universal tool for online preview/conversion of documents. Supports SPI plug-in mode, which can be quickly integrated into Java projects to achieve online file preview and various format conversion functions.

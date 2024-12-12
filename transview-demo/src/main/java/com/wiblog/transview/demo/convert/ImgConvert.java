@@ -2,6 +2,7 @@ package com.wiblog.transview.demo.convert;
 
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.context.TransViewContext;
+import com.wiblog.transview.core.utils.Util;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
@@ -24,14 +25,21 @@ public class ImgConvert {
      */
     private static final String TEST_SVG_FILE_NAME = "test.svg";
 
-    public static void convertSVGToPNG() throws IOException {
+    public static void convertSVGToPNG1() throws IOException {
         File file = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + TEST_FOLDER_NAME + "/" + TEST_SVG_FILE_NAME);
         String targetPath = file.getParentFile().getAbsolutePath();
         File targetFile = new File(targetPath + File.separator + "test.png");
         TransViewContext.convert(file, ExtensionEnum.PNG, Files.newOutputStream(targetFile.toPath()));
     }
 
+    public static void convertSVGToPNG2() throws IOException {
+        File file = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + TEST_FOLDER_NAME + "/" + TEST_SVG_FILE_NAME);
+        String targetPath = file.getParentFile().getAbsolutePath();
+        File targetFile = new File(targetPath + File.separator + "test.png");
+        TransViewContext.convert(Files.newInputStream(file.toPath()), "svg", targetFile);
+    }
+
     public static void main(String[] args) throws IOException {
-        convertSVGToPNG();
+        convertSVGToPNG2();
     }
 }

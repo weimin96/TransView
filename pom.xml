@@ -30,8 +30,8 @@
     </modules>
 
     <properties>
-        <revision>2.0.0</revision>
-        <spring-boot.version>2.7.14</spring-boot.version>
+        <revision>2.0.1</revision>
+        <spring-boot.version>3.3.4</spring-boot.version>
         <aspose-cad.version>24.3</aspose-cad.version>
         <aspose-excel.version>24.6</aspose-excel.version>
         <batik.version>1.14</batik.version>
@@ -43,7 +43,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
+        <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
     </properties>
 
     <scm>
@@ -91,11 +91,17 @@
                 <version>${revision}</version>
             </dependency>
 
+<!--            <dependency>-->
+<!--                <groupId>javax.servlet</groupId>-->
+<!--                <artifactId>javax.servlet-api</artifactId>-->
+<!--                <version>${javax.servlet-api.version}</version>-->
+<!--                <scope>provided</scope>-->
+<!--            </dependency>-->
+
             <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>${javax.servlet-api.version}</version>
-                <scope>provided</scope>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
             </dependency>
 
             <dependency>

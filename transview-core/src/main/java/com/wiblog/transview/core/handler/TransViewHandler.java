@@ -5,13 +5,10 @@ import com.wiblog.transview.core.common.Constant;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.utils.Util;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.*;
@@ -37,6 +34,10 @@ public abstract class TransViewHandler {
      * @throws Exception 异常
      */
     public abstract void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception;
+
+    public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, File targetFile) throws Exception {
+        convertHandler(sourceExtensionEnum, targetExtensionEnum, inputStream, Files.newOutputStream(targetFile.toPath()));
+    }
 
     /**
      * 支持的策略枚举列表
@@ -150,6 +151,19 @@ public abstract class TransViewHandler {
             String extension = Util.getExtension(file.getName());
             check(extension);
             convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, Files.newInputStream(file.toPath()), outputStream);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void convert(InputStream inputStream, String extension, File targetFile) {
+        try {
+            check(extension);
+            ExtensionEnum extensionEnum = ExtensionEnum.getByValue(Util.getExtension(targetFile.getName()));
+            if (extensionEnum == null) {
+                throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);
+            }
+            convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, inputStream, targetFile);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

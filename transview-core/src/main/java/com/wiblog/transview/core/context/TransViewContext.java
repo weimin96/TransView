@@ -4,8 +4,8 @@ import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.Util;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.EnumMap;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class TransViewContext {
      */
     public static void preview(File file, HttpServletResponse response) {
         String extension = Util.getExtension(file.getName());
-        if (extension == null) {
+        if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
         try (FileInputStream inputStream = new FileInputStream(file)) {
@@ -69,17 +69,30 @@ public class TransViewContext {
      */
     public static void preview(InputStream inputStream, String filename, HttpServletResponse response) {
         String extension = Util.getExtension(filename);
-        if (extension == null) {
+        if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
         createStrategy(extension).preview(inputStream, extension, response);
     }
 
+    /**
+     * 文件转换
+     * @param file 源文件
+     * @param extensionEnum 转换目标类型
+     * @param outputStream 目标文件流
+     */
     public static void convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream) {
         String extension = Util.getExtension(file.getName());
-        if (extension == null) {
+        if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
         createStrategy(extension).convert(file, extensionEnum, outputStream);
+    }
+
+    public static void convert(InputStream inputStream, String extension, File targetFile) {
+        if (Util.isBlank(extension)) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        createStrategy(extension).convert(inputStream, extension, targetFile);
     }
 }

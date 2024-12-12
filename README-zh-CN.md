@@ -10,6 +10,11 @@
 
 README: [English](README.md) | [中文](README-zh-CN.md)
 
+## 支持
+
+- jdk 11+
+- spring boot 3.x
+
 ## 介绍
 
 文档在线预览/转换通用工具。支持 `spi` 可拔插模式，能快速集成到 `Java` 项目中，实现文件在线预览和各种格式转换功能。
