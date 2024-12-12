@@ -9,7 +9,7 @@
     <artifactId>transview-demo</artifactId>
     <name>${project.artifactId}</name>
     <description>测试模块。</description>
-    <url>https://github.com/weimin96/transview-tool</url>
+    <url>https://github.com/weimin96/transview</url>
 
     <dependencies>
         <dependency>

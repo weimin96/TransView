@@ -15,6 +15,8 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 - jdk 11+
 - spring boot 3.x
 
+[jdk8 看这里](https://github.com/weimin96/TransView/tree/jdk8)
+
 ## 介绍
 
 文档在线预览/转换通用工具。支持 `spi` 可拔插模式，能快速集成到 `Java` 项目中，实现文件在线预览和各种格式转换功能。

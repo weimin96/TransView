@@ -10,6 +10,7 @@
             <includes>
                 <include>io.github.weimin96:transview-cad</include>
                 <include>io.github.weimin96:transview-core</include>
+                <include>io.github.weimin96:transview-poi</include>
             </includes>
             <unpack>false</unpack>
             <useProjectArtifact>true</useProjectArtifact>
