@@ -12,7 +12,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## support
 
-- jdk 11+
+- jdk 17+
 - spring boot 3.x
 
 [jdk8 see](https://github.com/weimin96/TransView/tree/jdk8)
