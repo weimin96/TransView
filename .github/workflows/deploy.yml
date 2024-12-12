@@ -6,7 +6,7 @@ on:
       - '*'
 
 jobs:
-  oss-release-deploy:
+  trans-view-release-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
