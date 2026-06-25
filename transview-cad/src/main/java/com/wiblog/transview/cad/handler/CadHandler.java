@@ -14,7 +14,6 @@ import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.SVGUtil;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
@@ -29,24 +28,29 @@ import java.util.List;
 public class CadHandler extends TransViewHandler {
 
     @Override
-    public void viewHandler(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) throws Exception {
-        CadImage cadImage = (CadImage) Image.load(inputStream);
+    public void viewHandler(InputStream inputStream, OutputStream outputStream, String extension, HttpServletResponse response) throws Exception {
+        CadImage cadImage = null;
+        try {
+            cadImage = (CadImage) Image.load(inputStream);
 
-        // 设置转换选项
-        CadRasterizationOptions rasterOptions = new CadRasterizationOptions();
-        rasterOptions.setPageWidth(TransViewProperties.View.Cad.getPageWidth());
-        rasterOptions.setPageHeight(TransViewProperties.View.Cad.getPageHeight());
-        rasterOptions.setDrawType(CadDrawTypeMode.UseObjectColor);
-        rasterOptions.setBackgroundColor(Color.getWhite());
-        rasterOptions.setLayouts(new String[]{TransViewProperties.View.Cad.getLayout()});
-        // shx字体目录
-        if (TransViewProperties.View.Cad.getShxFontsFolder() != null) {
-            rasterOptions.setShxFonts(TransViewProperties.View.Cad.getShxFontsFolder());
-        }
-        if (TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF) {
-            convertToPdfForResponse(outputStream, rasterOptions, cadImage);
-        } else {
-            convertToSvgForResponse(outputStream, rasterOptions, cadImage);
+            CadRasterizationOptions rasterOptions = new CadRasterizationOptions();
+            rasterOptions.setPageWidth(TransViewProperties.View.Cad.getPageWidth());
+            rasterOptions.setPageHeight(TransViewProperties.View.Cad.getPageHeight());
+            rasterOptions.setDrawType(CadDrawTypeMode.UseObjectColor);
+            rasterOptions.setBackgroundColor(Color.getWhite());
+            rasterOptions.setLayouts(new String[]{TransViewProperties.View.Cad.getLayout()});
+            if (TransViewProperties.View.Cad.getShxFontsFolder() != null) {
+                rasterOptions.setShxFonts(TransViewProperties.View.Cad.getShxFontsFolder());
+            }
+            if (TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF) {
+                convertToPdfForResponse(outputStream, rasterOptions, cadImage);
+            } else {
+                convertToSvgForResponse(outputStream, rasterOptions, cadImage);
+            }
+        } finally {
+            if (cadImage != null) {
+                cadImage.close();
+            }
         }
     }
 
@@ -67,7 +71,7 @@ public class CadHandler extends TransViewHandler {
      * @param cadImage cad图片
      * @throws Exception 异常
      */
-    public static void convertToPdfForResponse(ServletOutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws Exception {
+    public static void convertToPdfForResponse(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws Exception {
         PdfOptions pdfOptions = new PdfOptions();
         pdfOptions.setVectorRasterizationOptions(rasterOptions);
 
@@ -88,7 +92,7 @@ public class CadHandler extends TransViewHandler {
      * @param cadImage cad图片
      * @throws IOException 异常
      */
-    public static void convertToSvgForResponse(ServletOutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws IOException {
+    public static void convertToSvgForResponse(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws IOException {
         SvgOptions svgOptions = new SvgOptions();
         svgOptions.setVectorRasterizationOptions(rasterOptions);
 

@@ -1,6 +1,5 @@
 package com.wiblog.transview.cad.utils;
 
-import javax.servlet.ServletOutputStream;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.*;
@@ -21,7 +20,7 @@ import java.util.List;
  */
 public class PdfUtil {
 
-    public static void removeWatermark(ByteArrayInputStream pdfInputStream, ServletOutputStream outputStream) {
+    public static void removeWatermark(ByteArrayInputStream pdfInputStream, OutputStream outputStream) {
         try (PDDocument document = PDDocument.load(pdfInputStream)){
             removeAllText(document);
             document.save(outputStream);

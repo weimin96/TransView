@@ -1,6 +1,7 @@
 package com.wiblog.transview.core.handler;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.io.File;
@@ -16,9 +17,10 @@ class PlainHandlerTest {
         File file = File.createTempFile("transview-plain-", ".txt");
         try {
             Files.write(file.toPath(), "preview".getBytes(StandardCharsets.UTF_8));
+            MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
 
-            new PlainHandler().preview(file, response);
+            new PlainHandler().preview(file, request, response);
 
             assertThat(response.getContentLength()).isEqualTo(file.length());
             assertThat(response.getHeader("Cache-Control")).isEqualTo("public, max-age=3600");

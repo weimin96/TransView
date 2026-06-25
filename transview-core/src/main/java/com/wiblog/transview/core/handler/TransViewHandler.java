@@ -5,7 +5,7 @@ import com.wiblog.transview.core.common.Constant;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.utils.Util;
-import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
@@ -22,24 +22,47 @@ import java.util.concurrent.*;
  */
 public abstract class TransViewHandler {
 
-    private static final ExecutorService PREVIEW_EXECUTOR = new ThreadPoolExecutor(
-            Math.max(1, Runtime.getRuntime().availableProcessors()),
-            Math.max(1, Runtime.getRuntime().availableProcessors() * 2),
-            60L,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(200),
-            new ThreadFactory() {
-                private final java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+    private static volatile ExecutorService PREVIEW_EXECUTOR;
 
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "transview-preview-" + index.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            },
-            new ThreadPoolExecutor.AbortPolicy()
-    );
+    private static final class ExecutorHolder {
+        static final ExecutorService DEFAULT = createExecutor(
+                TransViewProperties.Executor.getCorePoolSize(),
+                TransViewProperties.Executor.getMaxPoolSize(),
+                TransViewProperties.Executor.getQueueCapacity()
+        );
+    }
+
+    private static ExecutorService createExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        return new ThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueCapacity),
+                new ThreadFactory() {
+                    private final java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "transview-preview-" + index.getAndIncrement());
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+                },
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+    }
+
+    /**
+     * 自定义线程池，覆盖默认配置
+     */
+    public static void initExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        PREVIEW_EXECUTOR = createExecutor(corePoolSize, maxPoolSize, queueCapacity);
+    }
+
+    private static ExecutorService getExecutor() {
+        return PREVIEW_EXECUTOR != null ? PREVIEW_EXECUTOR : ExecutorHolder.DEFAULT;
+    }
 
     protected TransViewHandler() {
 
@@ -69,14 +92,15 @@ public abstract class TransViewHandler {
     public abstract List<StrategyTypeEnum> strategyTypeEnums();
 
     /**
-     * 文件写入到 HttpServletResponse
+     * 文件写入到 OutputStream
      *
      * @param inputStream  文件流
-     * @param outputStream HttpServletResponse 输出流
+     * @param outputStream 输出流
      * @param extension    文件后缀
+     * @param response     HttpServletResponse
      * @throws Exception 异常
      */
-    public abstract void viewHandler(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) throws Exception;
+    public abstract void viewHandler(InputStream inputStream, OutputStream outputStream, String extension, HttpServletResponse response) throws Exception;
 
     /**
      * 处理响应结果
@@ -85,43 +109,39 @@ public abstract class TransViewHandler {
      * @param extension   文件后缀
      */
     public void handlerResponse(InputStream inputStream, String extension, HttpServletResponse response) {
-        // 设置 HttpServletResponse 的内容类型和输出
         response.setCharacterEncoding("UTF-8");
-        ServletOutputStream outputStream = null;
-        try {
-            outputStream = response.getOutputStream();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        handlerViewResponse(inputStream, outputStream, extension, response);
+        handlerViewResponse(inputStream, extension, response);
     }
 
-    private void handlerViewResponse(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) {
+    private void handlerViewResponse(InputStream inputStream, String extension, HttpServletResponse response) {
         try {
-            // 超时设置
             if (TransViewProperties.View.getTimeout() != null) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 Callable<Void> conversionTask = () -> {
-                    response.setContentType(StrategyTypeEnum.getMediaType(extension));
-                    viewHandler(inputStream, outputStream, extension, response);
+                    viewHandler(inputStream, buffer, extension, response);
                     return null;
                 };
                 Future<Void> future;
                 try {
-                    future = PREVIEW_EXECUTOR.submit(conversionTask);
+                    future = getExecutor().submit(conversionTask);
                 } catch (RejectedExecutionException e) {
                     response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                     response.setContentType(Constant.MediaType.HTML_VALUE);
-                    outputStream.write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(StandardCharsets.UTF_8));
+                    response.getOutputStream().write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(StandardCharsets.UTF_8));
                     return;
                 }
                 try {
                     future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                    byte[] result = buffer.toByteArray();
+                    response.setContentType(StrategyTypeEnum.getMediaType(extension));
+                    response.setContentLength(result.length);
+                    response.getOutputStream().write(result);
                 } catch (TimeoutException e) {
                     future.cancel(true);
+                    response.reset();
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     response.setContentType(Constant.MediaType.HTML_VALUE);
-                    outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(StandardCharsets.UTF_8));
+                    response.getOutputStream().write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(StandardCharsets.UTF_8));
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
                     if (cause instanceof RuntimeException) {
@@ -131,7 +151,7 @@ public abstract class TransViewHandler {
                 }
             } else {
                 response.setContentType(StrategyTypeEnum.getMediaType(extension));
-                viewHandler(inputStream, outputStream, extension, response);
+                viewHandler(inputStream, response.getOutputStream(), extension, response);
             }
             response.flushBuffer();
         } catch (RuntimeException e) {
@@ -157,17 +177,26 @@ public abstract class TransViewHandler {
      * 预览文件
      *
      * @param file 文件
+     * @param request  HttpServletRequest
+     * @param response HttpServletResponse
      */
-    public void preview(File file, HttpServletResponse response) {
-        String extension = Util.getExtensionOrFilename(file.getName());
+    public void preview(File file, HttpServletRequest request, HttpServletResponse response) {
+        String extension = Util.getExtension(file.getName());
         check(extension);
-        // 纯文件类型直接设置 Content-Length 和缓存头
-        if (StrategyTypeEnum.PLAIN_TYPES.contains(StrategyTypeEnum.getStrategy(extension))) {
-            response.setContentLengthLong(file.length());
+        response.setContentType(StrategyTypeEnum.getMediaType(extension));
+        if (isPlainType(extension)) {
             long lastModified = file.lastModified();
+            response.setContentLengthLong(file.length());
             response.setDateHeader("Last-Modified", lastModified);
             response.setHeader("Cache-Control", "public, max-age=3600");
             response.setHeader("ETag", "W/\"" + file.length() + "-" + lastModified + "\"");
+            if (isNotModified(file, request)) {
+                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                return;
+            }
+            if (handleRange(file, request, response)) {
+                return;
+            }
         }
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             handlerResponse(inputStream, extension, response);
@@ -218,5 +247,107 @@ public abstract class TransViewHandler {
         }
     }
 
+    private static boolean isPlainType(String extension) {
+        StrategyTypeEnum strategy = StrategyTypeEnum.getStrategy(extension);
+        return strategy != null && StrategyTypeEnum.PLAIN_TYPES.contains(strategy);
+    }
+
+    private static final java.text.SimpleDateFormat HTTP_DATE_FORMAT;
+
+    static {
+        HTTP_DATE_FORMAT = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.US);
+        HTTP_DATE_FORMAT.setTimeZone(java.util.TimeZone.getTimeZone("GMT"));
+    }
+
+    /**
+     * 处理 If-None-Match / If-Modified-Since 条件请求
+     * @return true 表示资源未修改，已返回 304
+     */
+    private static boolean isNotModified(File file, HttpServletRequest request) {
+        long lastModified = file.lastModified();
+        String etag = "W/\"" + file.length() + "-" + lastModified + "\"";
+
+        String ifNoneMatch = request.getHeader("If-None-Match");
+        if (ifNoneMatch != null && ifNoneMatch.equals(etag)) {
+            return true;
+        }
+
+        String ifModifiedSinceHeader = request.getHeader("If-Modified-Since");
+        if (ifModifiedSinceHeader != null) {
+            try {
+                long ifModifiedSince = HTTP_DATE_FORMAT.parse(ifModifiedSinceHeader).getTime();
+                if (ifModifiedSince > 0 && lastModified / 1000 <= ifModifiedSince / 1000) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 处理 Range 请求（206 Partial Content）
+     * @return true 表示已处理 Range 请求
+     */
+    private static boolean handleRange(File file, HttpServletRequest request, HttpServletResponse response) {
+        String rangeHeader = request.getHeader("Range");
+        if (rangeHeader == null) {
+            return false;
+        }
+
+        long fileLength = file.length();
+        long start = 0;
+        long end = fileLength - 1;
+
+        try {
+            String rangeValue = rangeHeader.trim().substring("bytes=".length());
+            if (rangeValue.startsWith("-")) {
+                start = fileLength - Long.parseLong(rangeValue.substring(1));
+            } else if (rangeValue.endsWith("-")) {
+                start = Long.parseLong(rangeValue.substring(0, rangeValue.length() - 1));
+            } else {
+                String[] parts = rangeValue.split("-");
+                start = Long.parseLong(parts[0]);
+                end = Long.parseLong(parts[1]);
+            }
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (start < 0 || start >= fileLength || end < start) {
+            response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+            response.setHeader("Content-Range", "bytes */" + fileLength);
+            return true;
+        }
+
+        if (end >= fileLength) {
+            end = fileLength - 1;
+        }
+
+        long contentLength = end - start + 1;
+        response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+        response.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + fileLength);
+        response.setHeader("Accept-Ranges", "bytes");
+        response.setContentLengthLong(contentLength);
+
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r");
+             OutputStream out = response.getOutputStream()) {
+            raf.seek(start);
+            byte[] buffer = new byte[8192];
+            long remaining = contentLength;
+            while (remaining > 0) {
+                int toRead = (int) Math.min(buffer.length, remaining);
+                int read = raf.read(buffer, 0, toRead);
+                if (read <= 0) break;
+                out.write(buffer, 0, read);
+                remaining -= read;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return true;
+    }
 
 }

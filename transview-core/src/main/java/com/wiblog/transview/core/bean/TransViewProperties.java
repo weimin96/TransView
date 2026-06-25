@@ -66,6 +66,27 @@ public class TransViewProperties {
             @Setter
             private static int sheetIndex = 0;
 
+            /**
+             * 是否每张工作表渲染为一页（默认 true）
+             */
+            @Getter
+            @Setter
+            private static boolean onePagePerSheet = true;
+
+            /**
+             * 最大渲染行数（-1 不限制）
+             */
+            @Getter
+            @Setter
+            private static int maxRows = -1;
+
+            /**
+             * 最大渲染列数（-1 不限制）
+             */
+            @Getter
+            @Setter
+            private static int maxColumns = -1;
+
         }
 
         public static class Cad {
@@ -106,6 +127,24 @@ public class TransViewProperties {
             private static String layout = "Model";
 
         }
+    }
+
+    /**
+     * 线程池配置
+     */
+    public static class Executor {
+
+        @Getter
+        @Setter
+        private static int corePoolSize = Math.max(1, Runtime.getRuntime().availableProcessors());
+
+        @Getter
+        @Setter
+        private static int maxPoolSize = Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
+
+        @Getter
+        @Setter
+        private static int queueCapacity = 200;
     }
 
     /**

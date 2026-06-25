@@ -4,6 +4,7 @@ import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.Util;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
@@ -47,14 +48,16 @@ public class TransViewContext {
     /**
      * 文件预览入口
      *
-     * @param file 文件
+     * @param file     文件
+     * @param request  HttpServletRequest
+     * @param response HttpServletResponse
      */
-    public static void preview(File file, HttpServletResponse response) {
+    public static void preview(File file, HttpServletRequest request, HttpServletResponse response) {
         String extension = Util.getExtension(file.getName());
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        createStrategy(extension).preview(file, response);
+        createStrategy(extension).preview(file, request, response);
     }
 
     /**

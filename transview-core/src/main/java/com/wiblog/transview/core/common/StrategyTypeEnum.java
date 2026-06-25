@@ -13,8 +13,8 @@ import java.util.List;
  */
 public enum StrategyTypeEnum {
 
-    DWG("dwg", TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? Constant.MediaType.PDF_VALUE : Constant.MediaType.IMAGE_SVG_VALUE),
-    DXF("dxf", TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? Constant.MediaType.PDF_VALUE : Constant.MediaType.IMAGE_SVG_VALUE),
+    DWG("dwg", null),
+    DXF("dxf", null),
     DOC("doc", Constant.MediaType.PDF_VALUE),
     DOCX("docx", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
@@ -39,6 +39,7 @@ public enum StrategyTypeEnum {
 
     public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, SVG, PDF, TXT, JSON, CSV, HTML, MP4, AVI);
 
+    // TODO: Word 暂不支持，无 WordHandler 实现
     public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);
 
     public static final List<StrategyTypeEnum> EXCEL_TYPES = Arrays.asList(XLS, XLSX);
