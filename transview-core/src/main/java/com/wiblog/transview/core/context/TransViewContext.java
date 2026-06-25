@@ -54,11 +54,7 @@ public class TransViewContext {
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        try (FileInputStream inputStream = new FileInputStream(file)) {
-            createStrategy(extension).preview(inputStream, extension, response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        createStrategy(extension).preview(file, response);
     }
 
     /**

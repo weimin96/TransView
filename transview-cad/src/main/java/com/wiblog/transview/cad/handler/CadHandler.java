@@ -34,11 +34,11 @@ public class CadHandler extends TransViewHandler {
 
         // 设置转换选项
         CadRasterizationOptions rasterOptions = new CadRasterizationOptions();
-        rasterOptions.setPageWidth(2549);
-        rasterOptions.setPageHeight(1228);
+        rasterOptions.setPageWidth(TransViewProperties.View.Cad.getPageWidth());
+        rasterOptions.setPageHeight(TransViewProperties.View.Cad.getPageHeight());
         rasterOptions.setDrawType(CadDrawTypeMode.UseObjectColor);
         rasterOptions.setBackgroundColor(Color.getWhite());
-        rasterOptions.setLayouts(new String[]{"Model"});
+        rasterOptions.setLayouts(new String[]{TransViewProperties.View.Cad.getLayout()});
         // shx字体目录
         if (TransViewProperties.View.Cad.getShxFontsFolder() != null) {
             rasterOptions.setShxFonts(TransViewProperties.View.Cad.getShxFontsFolder());
@@ -68,17 +68,17 @@ public class CadHandler extends TransViewHandler {
      * @throws Exception 异常
      */
     public static void convertToPdfForResponse(ServletOutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws Exception {
-        // Create an instance of PdfOptions
         PdfOptions pdfOptions = new PdfOptions();
-
-        // Set rasterization options
         pdfOptions.setVectorRasterizationOptions(rasterOptions);
-        // 将 CadImage 转换为 byteOutputStream
-        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-        cadImage.save(byteOutputStream, pdfOptions);
-        byte[] byteArray = byteOutputStream.toByteArray();
-        ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteArray);
-        PdfUtil.removeWatermark(pdfInputStream, outputStream);
+
+        if (TransViewProperties.View.isRemoveWatermark()) {
+            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+            cadImage.save(byteOutputStream, pdfOptions);
+            ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+            PdfUtil.removeWatermark(pdfInputStream, outputStream);
+        } else {
+            cadImage.save(outputStream, pdfOptions);
+        }
     }
 
     /**
@@ -89,18 +89,17 @@ public class CadHandler extends TransViewHandler {
      * @throws IOException 异常
      */
     public static void convertToSvgForResponse(ServletOutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws IOException {
-
         SvgOptions svgOptions = new SvgOptions();
         svgOptions.setVectorRasterizationOptions(rasterOptions);
 
-        // 将 CadImage 转换为 SVG 字符串
-        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-        cadImage.save(byteOutputStream, svgOptions);
-
-        byte[] byteArray = byteOutputStream.toByteArray();
-        ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteArray);
-
-        String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_CAD);
-        outputStream.write(transformedXml.getBytes());
+        if (TransViewProperties.View.isRemoveWatermark()) {
+            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+            cadImage.save(byteOutputStream, svgOptions);
+            ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+            String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_CAD);
+            outputStream.write(transformedXml.getBytes());
+        } else {
+            cadImage.save(outputStream, svgOptions);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.wiblog.transview.poi.handler;
 
 import com.aspose.cells.*;
+import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.common.Constant;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
@@ -51,9 +52,16 @@ public class ExcelHandler extends TransViewHandler {
         // 加载Excel文件
         Workbook workbook = new Workbook(inputStream);
         // 计算所有公式
-        workbook.calculateFormula();
-        // 获取当前工作表
-        Worksheet sheet = workbook.getWorksheets().get(0);
+        if (TransViewProperties.View.Excel.isCalculateFormula()) {
+            workbook.calculateFormula();
+        }
+        // 获取指定工作表
+        int sheetIndex = TransViewProperties.View.Excel.getSheetIndex();
+        WorksheetCollection worksheets = workbook.getWorksheets();
+        if (sheetIndex < 0 || sheetIndex >= worksheets.getCount()) {
+            sheetIndex = 0;
+        }
+        Worksheet sheet = worksheets.get(sheetIndex);
 
         // 检查工作表是否为空
         if (sheet.getCells().getMaxRow() == -1 && sheet.getCells().getMaxColumn() == -1) {
@@ -68,15 +76,16 @@ public class ExcelHandler extends TransViewHandler {
 
         // 渲染工作表为图像
         SheetRender sr = new SheetRender(sheet, options);
-        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-        sr.toImage(0, byteOutputStream);
 
-
-        byte[] byteArray = byteOutputStream.toByteArray();
-        ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteArray);
-
-        String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_EXCEL);
-        outputStream.write(transformedXml.getBytes());
+        if (TransViewProperties.View.isRemoveWatermark()) {
+            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+            sr.toImage(0, byteOutputStream);
+            ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+            String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_EXCEL);
+            outputStream.write(transformedXml.getBytes(StandardCharsets.UTF_8));
+        } else {
+            sr.toImage(0, outputStream);
+        }
     }
 
     private static void handleEmptyExcel(HttpServletResponse response) throws IOException {

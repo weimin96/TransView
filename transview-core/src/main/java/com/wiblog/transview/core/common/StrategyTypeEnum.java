@@ -58,6 +58,11 @@ public enum StrategyTypeEnum {
     }
 
     public static String getMediaType(String type) {
+        if (DWG.type.equals(type) || DXF.type.equals(type)) {
+            return TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF
+                    ? Constant.MediaType.PDF_VALUE
+                    : Constant.MediaType.IMAGE_SVG_VALUE;
+        }
         return Arrays.stream(StrategyTypeEnum.values())
                 .filter(e -> e.type.equals(type))
                 .findFirst()

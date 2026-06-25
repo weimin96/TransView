@@ -39,3 +39,8 @@ build/
 ### Mac OS ###
 .DS_Store
 **/.flattened-pom.xml
+
+
+findings.md
+progress.md
+task_plan.md

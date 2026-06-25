@@ -21,8 +21,8 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 在线预览支持格式：
 - 图片：jpg、jpeg、png、gif、svg
-- 文档：doc、docx、pdf、xls、xlsx、csv
-- 文本：txt、json、htmL
+- 文档：pdf、xls、xlsx、csv
+- 文本：txt、json、html
 - 视频：mp4、avi
 - CAD：dwg、dxf
 
@@ -33,9 +33,9 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 | 组件名                | 描述                                                                        |
 |--------------------|---------------------------------------------------------------------------|
-| `transview-core` | 核心包，包含文件预览入口和普通文件处理逻辑（txt、json、csv、htmL、pdf、jpg、jpeg、png、gif、svg、mp4、avi） |
+| `transview-core` | 核心包，包含文件预览入口和普通文件处理逻辑（txt、json、csv、html、pdf、jpg、jpeg、png、gif、svg、mp4、avi） |
 | `transview-cad`  | cad 格式处理模块（dwg、dxf）                                                       |
-| `transview-poi`  | 文档格式处理模块（doc、docx、xls、xlsx）                                               
+| `transview-poi`  | 文档格式处理模块（xls、xlsx）                                               
 
 可以根据需求对每个模块单独引入，也可以通过引入 `transview-all` 方式引入所有模块
 
@@ -105,6 +105,32 @@ ViewerContext.preview(InputStream inputStream, String filenameOrExtension);
 2、通过 `File` 写入 `HttpServletResponse`
 ```java
 ViewerContext.preview(File file, HttpServletResponse response) ;
+```
+
+#### 配置
+
+```java
+// 超时时间（可选）
+TransViewProperties.View.setTimeout(Duration.ofSeconds(30));
+
+// 是否移除转换水印（默认 true）
+TransViewProperties.View.setRemoveWatermark(true);
+
+// Excel：是否重算公式（默认 false，大表建议关闭）
+TransViewProperties.View.Excel.setCalculateFormula(false);
+
+// Excel：预览的工作表索引（默认 0）
+TransViewProperties.View.Excel.setSheetIndex(0);
+
+// CAD：转换类型 SVG/PDF（默认 SVG）
+TransViewProperties.View.Cad.setConvertType(CadConvertType.SVG);
+
+// CAD：渲染尺寸（默认 2549x1228）
+TransViewProperties.View.Cad.setPageWidth(1600);
+TransViewProperties.View.Cad.setPageHeight(900);
+
+// CAD：布局名称（默认 "Model"）
+TransViewProperties.View.Cad.setLayout("Model");
 ```
 
 #### 格式转换

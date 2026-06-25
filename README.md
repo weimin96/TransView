@@ -22,8 +22,8 @@ A universal tool for online preview/conversion of documents. Supports SPI plug-i
 Supported formats:
 
 * Images: jpg、jpeg、png、gif、svg
-* Documents: doc、docx、pdf、xls、xlsx、csv
-* Text: txt、json、htmL
+* Documents: pdf、xls、xlsx、csv
+* Text: txt、json、html
 * Video: mp4、avi
 * CAD: dwg、dxf
 
@@ -35,9 +35,9 @@ Format conversion supports formats:
 
 | components Name    | Description                                                                                                  |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
-| `transview-core` | Core package comprising file preview entry points and generic file handling logic.(txt、json、csv、htmL、pdf、jpg、jpeg、png、svg、gif、mp4、avi) |
+| `transview-core` | Core package comprising file preview entry points and generic file handling logic.(txt、json、csv、html、pdf、jpg、jpeg、png、svg、gif、mp4、avi) |
 | `transview-cad`  | CAD format processing module (dwg、dxf)                                                                       |
-| `transview-poi`  | document format processing module (doc、docx、xls、xlsx)                                                        
+| `transview-poi`  | document format processing module (xls、xlsx)                                                        
 
 You can individually import each module according to your needs, or you can import all modules collectively by using the `transview-all` package.
 
@@ -107,6 +107,32 @@ TransViewContext.preview(InputStream inputStream, String filenameOrExtension);
 2、Write `HttpServletResponse` through `File`
 ```java
 TransViewContext.preview(File file, HttpServletResponse response) ;
+```
+
+#### Configuration
+
+```java
+// Timeout (optional)
+TransViewProperties.View.setTimeout(Duration.ofSeconds(30));
+
+// Remove conversion watermark (default true)
+TransViewProperties.View.setRemoveWatermark(true);
+
+// Excel: recalculate formulas (default false, recommended off for large files)
+TransViewProperties.View.Excel.setCalculateFormula(false);
+
+// Excel: sheet index to preview (default 0)
+TransViewProperties.View.Excel.setSheetIndex(0);
+
+// CAD: convert type SVG/PDF (default SVG)
+TransViewProperties.View.Cad.setConvertType(CadConvertType.SVG);
+
+// CAD: render dimensions (default 2549x1228)
+TransViewProperties.View.Cad.setPageWidth(1600);
+TransViewProperties.View.Cad.setPageHeight(900);
+
+// CAD: layout name (default "Model")
+TransViewProperties.View.Cad.setLayout("Model");
 ```
 
 #### format conversion
