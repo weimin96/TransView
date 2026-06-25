@@ -9,14 +9,16 @@ import java.time.Duration;
 
 
 /**
- * 参数配置
+ * 全局静态配置，应在应用启动时设置，运行期间不应按请求修改。
+ * 按请求修改会导致并发请求之间互相影响（串扰）。
+ *
  * @author panwm
  * @since 2024/7/10 0:02
  */
 public class TransViewProperties {
 
     /**
-     * 预览配置
+     * 预览配置（启动期全局配置，非请求级）
      */
     public static class View {
 

@@ -9,6 +9,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.*;
@@ -37,7 +38,7 @@ public abstract class TransViewHandler {
                     return thread;
                 }
             },
-            new ThreadPoolExecutor.CallerRunsPolicy()
+            new ThreadPoolExecutor.AbortPolicy()
     );
 
     protected TransViewHandler() {
@@ -105,15 +106,22 @@ public abstract class TransViewHandler {
                     viewHandler(inputStream, outputStream, extension, response);
                     return null;
                 };
-                // 超时取消
-                Future<Void> future = PREVIEW_EXECUTOR.submit(conversionTask);
+                Future<Void> future;
+                try {
+                    future = PREVIEW_EXECUTOR.submit(conversionTask);
+                } catch (RejectedExecutionException e) {
+                    response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    response.setContentType(Constant.MediaType.HTML_VALUE);
+                    outputStream.write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
                 try {
                     future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
                 } catch (TimeoutException e) {
                     future.cancel(true);
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     response.setContentType(Constant.MediaType.HTML_VALUE);
-                    outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes());
+                    outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(StandardCharsets.UTF_8));
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
                     if (cause instanceof RuntimeException) {
@@ -159,7 +167,7 @@ public abstract class TransViewHandler {
             long lastModified = file.lastModified();
             response.setDateHeader("Last-Modified", lastModified);
             response.setHeader("Cache-Control", "public, max-age=3600");
-            response.setHeader("ETag", "\"W/" + file.length() + "-" + lastModified + "\"");
+            response.setHeader("ETag", "W/\"" + file.length() + "-" + lastModified + "\"");
         }
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             handlerResponse(inputStream, extension, response);

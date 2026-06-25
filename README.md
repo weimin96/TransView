@@ -111,6 +111,8 @@ TransViewContext.preview(File file, HttpServletResponse response) ;
 
 #### Configuration
 
+These are global startup-time configs. Set them once during application init, not per-request, to avoid concurrency issues.
+
 ```java
 // Timeout (optional)
 TransViewProperties.View.setTimeout(Duration.ofSeconds(30));

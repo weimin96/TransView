@@ -109,6 +109,8 @@ ViewerContext.preview(File file, HttpServletResponse response) ;
 
 #### 配置
 
+以下为启动期全局配置，应在应用初始化时设置一次，不要在请求处理中修改，否则并发请求之间会互相影响。
+
 ```java
 // 超时时间（可选）
 TransViewProperties.View.setTimeout(Duration.ofSeconds(30));
