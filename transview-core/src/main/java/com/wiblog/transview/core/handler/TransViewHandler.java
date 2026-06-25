@@ -11,6 +11,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -57,11 +60,28 @@ public abstract class TransViewHandler {
      * 自定义线程池，覆盖默认配置
      */
     public static void initExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        validateExecutorConfig(corePoolSize, maxPoolSize, queueCapacity);
+        ExecutorService oldExecutor = PREVIEW_EXECUTOR;
         PREVIEW_EXECUTOR = createExecutor(corePoolSize, maxPoolSize, queueCapacity);
+        if (oldExecutor != null) {
+            oldExecutor.shutdown();
+        }
     }
 
     private static ExecutorService getExecutor() {
         return PREVIEW_EXECUTOR != null ? PREVIEW_EXECUTOR : ExecutorHolder.DEFAULT;
+    }
+
+    private static void validateExecutorConfig(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        if (corePoolSize <= 0) {
+            throw new IllegalArgumentException("corePoolSize 必须大于 0");
+        }
+        if (maxPoolSize < corePoolSize) {
+            throw new IllegalArgumentException("maxPoolSize 必须大于等于 corePoolSize");
+        }
+        if (queueCapacity <= 0) {
+            throw new IllegalArgumentException("queueCapacity 必须大于 0");
+        }
     }
 
     protected TransViewHandler() {
@@ -114,11 +134,15 @@ public abstract class TransViewHandler {
     }
 
     private void handlerViewResponse(InputStream inputStream, String extension, HttpServletResponse response) {
+        Path resultFile = null;
         try {
             if (TransViewProperties.View.getTimeout() != null) {
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                resultFile = Files.createTempFile("transview-preview-", "." + extension);
+                Path currentResultFile = resultFile;
                 Callable<Void> conversionTask = () -> {
-                    viewHandler(inputStream, buffer, extension, response);
+                    try (OutputStream outputStream = Files.newOutputStream(currentResultFile)) {
+                        viewHandler(inputStream, outputStream, extension, response);
+                    }
                     return null;
                 };
                 Future<Void> future;
@@ -132,10 +156,9 @@ public abstract class TransViewHandler {
                 }
                 try {
                     future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
-                    byte[] result = buffer.toByteArray();
                     response.setContentType(StrategyTypeEnum.getMediaType(extension));
-                    response.setContentLength(result.length);
-                    response.getOutputStream().write(result);
+                    response.setContentLengthLong(Files.size(resultFile));
+                    Files.copy(resultFile, response.getOutputStream());
                 } catch (TimeoutException e) {
                     future.cancel(true);
                     response.reset();
@@ -158,6 +181,13 @@ public abstract class TransViewHandler {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        } finally {
+            if (resultFile != null) {
+                try {
+                    Files.deleteIfExists(resultFile);
+                } catch (IOException ignored) {
+                }
+            }
         }
     }
 
@@ -176,6 +206,16 @@ public abstract class TransViewHandler {
     /**
      * 预览文件
      *
+     * @param file     文件
+     * @param response HttpServletResponse
+     */
+    public void preview(File file, HttpServletResponse response) {
+        preview(file, null, response);
+    }
+
+    /**
+     * 预览文件
+     *
      * @param file 文件
      * @param request  HttpServletRequest
      * @param response HttpServletResponse
@@ -186,17 +226,19 @@ public abstract class TransViewHandler {
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         if (isPlainType(extension)) {
             long lastModified = file.lastModified();
-            response.setContentLengthLong(file.length());
             response.setDateHeader("Last-Modified", lastModified);
             response.setHeader("Cache-Control", "public, max-age=3600");
             response.setHeader("ETag", "W/\"" + file.length() + "-" + lastModified + "\"");
-            if (isNotModified(file, request)) {
-                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                return;
+            if (request != null) {
+                if (isNotModified(file, request)) {
+                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                    return;
+                }
+                if (handleRange(file, request, response)) {
+                    return;
+                }
             }
-            if (handleRange(file, request, response)) {
-                return;
-            }
+            response.setContentLengthLong(file.length());
         }
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             handlerResponse(inputStream, extension, response);
@@ -252,13 +294,6 @@ public abstract class TransViewHandler {
         return strategy != null && StrategyTypeEnum.PLAIN_TYPES.contains(strategy);
     }
 
-    private static final java.text.SimpleDateFormat HTTP_DATE_FORMAT;
-
-    static {
-        HTTP_DATE_FORMAT = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.US);
-        HTTP_DATE_FORMAT.setTimeZone(java.util.TimeZone.getTimeZone("GMT"));
-    }
-
     /**
      * 处理 If-None-Match / If-Modified-Since 条件请求
      * @return true 表示资源未修改，已返回 304
@@ -275,7 +310,9 @@ public abstract class TransViewHandler {
         String ifModifiedSinceHeader = request.getHeader("If-Modified-Since");
         if (ifModifiedSinceHeader != null) {
             try {
-                long ifModifiedSince = HTTP_DATE_FORMAT.parse(ifModifiedSinceHeader).getTime();
+                long ifModifiedSince = ZonedDateTime.parse(ifModifiedSinceHeader, DateTimeFormatter.RFC_1123_DATE_TIME)
+                        .toInstant()
+                        .toEpochMilli();
                 if (ifModifiedSince > 0 && lastModified / 1000 <= ifModifiedSince / 1000) {
                     return true;
                 }
@@ -295,6 +332,9 @@ public abstract class TransViewHandler {
         if (rangeHeader == null) {
             return false;
         }
+        if (!rangeHeader.startsWith("bytes=")) {
+            return setRangeNotSatisfiable(response, file.length());
+        }
 
         long fileLength = file.length();
         long start = 0;
@@ -302,23 +342,31 @@ public abstract class TransViewHandler {
 
         try {
             String rangeValue = rangeHeader.trim().substring("bytes=".length());
+            if (rangeValue.contains(",")) {
+                return setRangeNotSatisfiable(response, fileLength);
+            }
             if (rangeValue.startsWith("-")) {
-                start = fileLength - Long.parseLong(rangeValue.substring(1));
+                long suffixLength = Long.parseLong(rangeValue.substring(1));
+                if (suffixLength <= 0) {
+                    return setRangeNotSatisfiable(response, fileLength);
+                }
+                start = Math.max(0, fileLength - suffixLength);
             } else if (rangeValue.endsWith("-")) {
                 start = Long.parseLong(rangeValue.substring(0, rangeValue.length() - 1));
             } else {
                 String[] parts = rangeValue.split("-");
+                if (parts.length != 2) {
+                    return setRangeNotSatisfiable(response, fileLength);
+                }
                 start = Long.parseLong(parts[0]);
                 end = Long.parseLong(parts[1]);
             }
         } catch (Exception e) {
-            return false;
+            return setRangeNotSatisfiable(response, fileLength);
         }
 
         if (start < 0 || start >= fileLength || end < start) {
-            response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-            response.setHeader("Content-Range", "bytes */" + fileLength);
-            return true;
+            return setRangeNotSatisfiable(response, fileLength);
         }
 
         if (end >= fileLength) {
@@ -347,6 +395,12 @@ public abstract class TransViewHandler {
             throw new RuntimeException(e);
         }
 
+        return true;
+    }
+
+    private static boolean setRangeNotSatisfiable(HttpServletResponse response, long fileLength) {
+        response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+        response.setHeader("Content-Range", "bytes */" + fileLength);
         return true;
     }
 

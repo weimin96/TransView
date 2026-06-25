@@ -63,6 +63,20 @@ public class TransViewContext {
     /**
      * 文件预览入口
      *
+     * @param file     文件
+     * @param response HttpServletResponse
+     */
+    public static void preview(File file, HttpServletResponse response) {
+        String extension = Util.getExtension(file.getName());
+        if (Util.isBlank(extension)) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        createStrategy(extension).preview(file, response);
+    }
+
+    /**
+     * 文件预览入口
+     *
      * @param inputStream 文件流
      * @param filename    文件名
      */
