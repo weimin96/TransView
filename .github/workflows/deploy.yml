@@ -33,7 +33,7 @@ jobs:
         run: |
           echo "RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Publish to Maven Central
-        run:  mvn clean deploy -P release -Dmaven.test.skip=true -pl transview-bom,transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-servlet-jakarta,transview-all,transview-all-jdk8,transview-spring-boot2-starter,transview-spring-boot-starter,transview-spring-boot4-starter -am
+        run:  mvn clean deploy -P release -Dmaven.test.skip=true
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           CENTER_USERNAME: ${{ secrets.CENTER_USERNAME }}

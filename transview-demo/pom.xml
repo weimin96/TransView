@@ -11,6 +11,10 @@
     <description>测试模块。</description>
     <url>https://github.com/weimin96/transview</url>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.weimin96</groupId>
