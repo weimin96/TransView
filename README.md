@@ -10,44 +10,46 @@
 
 README: [English](README.md) | [中文](README-zh-CN.md)
 
-## support
+## Support
 
-- jdk 17+
-- spring boot 3.x
-
-[jdk8 see](https://github.com/weimin96/TransView/tree/jdk8)
+| Environment | JDK | Spring Boot | Artifact |
+|-------------|-----|-------------|----------|
+| JDK 17+ | 17+ | 3.x | `transview-all` |
+| JDK 8+ | 8+ | 2.x | `transview-all-jdk8` |
 
 ## Introduction
 
 A universal tool for online preview/conversion of documents. Supports SPI plug-in mode, which can be quickly integrated into Java projects to achieve online file preview and various format conversion functions.
 
-Supported formats:
+Supported preview formats:
 
-* Images: jpg、jpeg、png、gif、svg
-* Documents: doc、docx、pdf、xls、xlsx、csv
-* Text: txt、json、htmL
-* Video: mp4、avi
-* CAD: dwg、dxf
+* Images: jpg, jpeg, png, gif, svg
+* Documents: pdf, xls, xlsx, csv
+* Text: txt, json, html
+* Video: mp4, avi
+* CAD: dwg, dxf
 
-Format conversion supports formats:
+Format conversion supports:
 
 * svg -> png
 
-## Supported components:
+## Components
 
-| components Name    | Description                                                                                                  |
-|--------------------|--------------------------------------------------------------------------------------------------------------|
-| `transview-core` | Core package comprising file preview entry points and generic file handling logic.(txt、json、csv、htmL、pdf、jpg、jpeg、png、svg、gif、mp4、avi) |
-| `transview-cad`  | CAD format processing module (dwg、dxf)                                                                       |
-| `transview-poi`  | document format processing module (doc、docx、xls、xlsx)                                                        
-
-You can individually import each module according to your needs, or you can import all modules collectively by using the `transview-all` package.
+| Component | Description |
+|-----------|-------------|
+| `transview-core` | Core module, no servlet dependency, compiled to Java 8 |
+| `transview-cad` | CAD format module (dwg, dxf), compiled to Java 8 |
+| `transview-poi` | Excel format module (xls, xlsx), compiled to Java 8 |
+| `transview-servlet-javax` | javax.servlet adapter, compiled to Java 8 |
+| `transview-servlet-jakarta` | jakarta.servlet adapter, compiled to Java 17 |
+| `transview-all` | JDK 17+ aggregate (core + cad + poi + jakarta) |
+| `transview-all-jdk8` | JDK 8+ aggregate (core + cad + poi + javax) |
 
 ## Getting Started
 
-### Introduce dependency
+### Dependencies
 
-**Mode one:To import all dependencies**
+**JDK 17+ / Spring Boot 3.x**
 
 ```xml
 <dependency>
@@ -57,28 +59,41 @@ You can individually import each module according to your needs, or you can impo
 </dependency>
 ```
 
-**Mode two:Separate introduction**
+**JDK 8+ / Spring Boot 2.x**
 
-core module(must)
 ```xml
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>transview-all-jdk8</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+```
+
+**Individual modules**
+
+```xml
+<!-- Core (required) -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-core</artifactId>
     <version>${lastVersion}</version>
 </dependency>
-```
 
-cad module
-```xml
+<!-- Servlet adapter (choose one) -->
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>transview-servlet-jakarta</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+
+<!-- Optional: CAD -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-cad</artifactId>
     <version>${lastVersion}</version>
 </dependency>
-```
 
-poi module
-```xml
+<!-- Optional: Excel -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-poi</artifactId>
@@ -88,31 +103,36 @@ poi module
 
 ### Usage
 
-[demo](https://github.com/weimin96/TransView/tree/main/transview-demo/src/main/java/com/wiblog/transview/demo)
+[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
 
-#### preview online
+#### Preview
+
+**JDK 17+ / jakarta**
 
 ```java
+import com.wiblog.transview.servlet.jakarta.TransViewContext;
+
 @GetMapping("/preview")
-public void preview(MultipartFile file, HttpServletResponse response) throws IOException {
+public void preview(MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws IOException {
     TransViewContext.preview(file.getInputStream(), file.getName(), response);
 }
 ```
 
-**All supported methods**
+**JDK 8+ / javax**
 
-1、Write `HttpServletResponse` through `InputStream`
 ```java
-TransViewContext.preview(InputStream inputStream, String filenameOrExtension);
+import com.wiblog.transview.servlet.javax.TransViewContext;
+
+@GetMapping("/preview")
+public void preview(MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    TransViewContext.preview(file.getInputStream(), file.getName(), response);
+}
 ```
 
-2、Write `HttpServletResponse` through `File`
-```java
-TransViewContext.preview(File file, HttpServletResponse response) ;
-```
-
-#### format conversion
+#### Format conversion
 
 ```java
+import com.wiblog.transview.core.context.TransViewContext;
+
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
 ```

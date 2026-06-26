@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>io.github.weimin96</groupId>
+        <artifactId>transview-parent</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>transview-all-jdk8</artifactId>
+    <name>${project.artifactId}</name>
+    <description>transview JDK8 聚合包</description>
+    <url>https://github.com/weimin96/transview</url>
+
+    <properties>
+        <java.version>8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>transview-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>transview-cad</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>transview-poi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>transview-servlet-javax</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

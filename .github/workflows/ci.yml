@@ -66,10 +66,14 @@ jobs:
           fi
       # 将打包好的 Jar 包 放到 staging 文件夹
       - run: |
-          mkdir staging 
+          mkdir staging
           cp transview-all/target/*.jar staging
+          cp transview-all-jdk8/target/*.jar staging
           cp transview-core/target/*.jar staging
           cp transview-cad/target/*.jar staging
+          cp transview-poi/target/*.jar staging
+          cp transview-servlet-javax/target/*.jar staging
+          cp transview-servlet-jakarta/target/*.jar staging
       # 发布release
       - uses: ncipollo/release-action@v1
         if: env.version_changed == 'true'

@@ -4,7 +4,6 @@ import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.Util;
-import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.*;
 import java.util.EnumMap;
@@ -47,18 +46,15 @@ public class TransViewContext {
     /**
      * 文件预览入口
      *
-     * @param file 文件
+     * @param file         文件
+     * @param outputStream 输出流
      */
-    public static void preview(File file, HttpServletResponse response) {
+    public static void preview(File file, OutputStream outputStream) {
         String extension = Util.getExtension(file.getName());
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        try (FileInputStream inputStream = new FileInputStream(file)) {
-            createStrategy(extension).preview(inputStream, extension, response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        createStrategy(extension).preview(file, outputStream);
     }
 
     /**
@@ -66,13 +62,14 @@ public class TransViewContext {
      *
      * @param inputStream 文件流
      * @param filename    文件名
+     * @param outputStream 输出流
      */
-    public static void preview(InputStream inputStream, String filename, HttpServletResponse response) {
+    public static void preview(InputStream inputStream, String filename, OutputStream outputStream) {
         String extension = Util.getExtension(filename);
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        createStrategy(extension).preview(inputStream, extension, response);
+        createStrategy(extension).preview(inputStream, extension, outputStream);
     }
 
     /**

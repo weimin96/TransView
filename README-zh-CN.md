@@ -12,10 +12,10 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## 支持
 
-- jdk 11+
-- spring boot 3.x
-
-[jdk8 看这里](https://github.com/weimin96/TransView/tree/jdk8)
+| 环境 | JDK | Spring Boot | 聚合包 |
+|------|-----|-------------|--------|
+| JDK 17+ | 17+ | 3.x | `transview-all` |
+| JDK 8+ | 8+ | 2.x | `transview-all-jdk8` |
 
 ## 介绍
 
@@ -23,8 +23,8 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 在线预览支持格式：
 - 图片：jpg、jpeg、png、gif、svg
-- 文档：doc、docx、pdf、xls、xlsx、csv
-- 文本：txt、json、htmL
+- 文档：pdf、xls、xlsx、csv
+- 文本：txt、json、html
 - 视频：mp4、avi
 - CAD：dwg、dxf
 
@@ -33,19 +33,21 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## 包含组件
 
-| 组件名                | 描述                                                                        |
-|--------------------|---------------------------------------------------------------------------|
-| `transview-core` | 核心包，包含文件预览入口和普通文件处理逻辑（txt、json、csv、htmL、pdf、jpg、jpeg、png、gif、svg、mp4、avi） |
-| `transview-cad`  | cad 格式处理模块（dwg、dxf）                                                       |
-| `transview-poi`  | 文档格式处理模块（doc、docx、xls、xlsx）                                               
-
-可以根据需求对每个模块单独引入，也可以通过引入 `transview-all` 方式引入所有模块
+| 组件名 | 描述 |
+|--------|------|
+| `transview-core` | 核心包，不含 servlet 依赖，编译目标 Java 8 |
+| `transview-cad` | CAD 格式处理模块（dwg、dxf），编译目标 Java 8 |
+| `transview-poi` | 文档格式处理模块（xls、xlsx），编译目标 Java 8 |
+| `transview-servlet-javax` | javax.servlet 适配模块，编译目标 Java 8 |
+| `transview-servlet-jakarta` | jakarta.servlet 适配模块，编译目标 Java 17 |
+| `transview-all` | JDK 17+ 聚合包（core + cad + poi + jakarta） |
+| `transview-all-jdk8` | JDK 8+ 聚合包（core + cad + poi + javax） |
 
 ## 开始使用
 
 ### 引入依赖
 
-**方式一、全量引入**
+**JDK 17+ / Spring Boot 3.x**
 
 ```xml
 <dependency>
@@ -55,28 +57,41 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 </dependency>
 ```
 
-**方式二、单独引入**
+**JDK 8+ / Spring Boot 2.x**
 
-核心模块（必须）
 ```xml
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>transview-all-jdk8</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+```
+
+**单独引入**
+
+```xml
+<!-- 核心模块（必须） -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-core</artifactId>
     <version>${lastVersion}</version>
 </dependency>
-```
 
-cad模块
-```xml
+<!-- servlet 适配（二选一） -->
+<dependency>
+    <groupId>io.github.weimin96</groupId>
+    <artifactId>transview-servlet-jakarta</artifactId>
+    <version>${lastVersion}</version>
+</dependency>
+
+<!-- 可选：CAD 模块 -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-cad</artifactId>
     <version>${lastVersion}</version>
 </dependency>
-```
 
-poi模块
-```xml
+<!-- 可选：Excel 模块 -->
 <dependency>
     <groupId>io.github.weimin96</groupId>
     <artifactId>transview-poi</artifactId>
@@ -86,31 +101,36 @@ poi模块
 
 ### 使用
 
-[demo](https://github.com/weimin96/TransView/tree/main/transview-demo/src/main/java/com/wiblog/transview/demo)
+[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
 
 #### 在线预览
 
+**JDK 17+ / jakarta**
+
 ```java
+import com.wiblog.transview.servlet.jakarta.TransViewContext;
+
 @GetMapping("/preview")
-public void preview(MultipartFile file, HttpServletResponse response) throws IOException {
+public void preview(MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws IOException {
     TransViewContext.preview(file.getInputStream(), file.getName(), response);
 }
 ```
 
-**支持的所有方法**
+**JDK 8+ / javax**
 
-1、通过 `InputStream` 写入 `HttpServletResponse`
 ```java
-ViewerContext.preview(InputStream inputStream, String filenameOrExtension);
-```
+import com.wiblog.transview.servlet.javax.TransViewContext;
 
-2、通过 `File` 写入 `HttpServletResponse`
-```java
-ViewerContext.preview(File file, HttpServletResponse response) ;
+@GetMapping("/preview")
+public void preview(MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    TransViewContext.preview(file.getInputStream(), file.getName(), response);
+}
 ```
 
 #### 格式转换
 
 ```java
+import com.wiblog.transview.core.context.TransViewContext;
+
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
 ```

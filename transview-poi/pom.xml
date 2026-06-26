@@ -13,16 +13,16 @@
     <name>${project.artifactId}</name>
     <description>doc 处理核心包</description>
 
+    <properties>
+        <java.version>8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.weimin96</groupId>
             <artifactId>transview-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
             <scope>provided</scope>
         </dependency>
 

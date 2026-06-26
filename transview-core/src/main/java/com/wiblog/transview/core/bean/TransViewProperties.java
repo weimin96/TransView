@@ -9,14 +9,16 @@ import java.time.Duration;
 
 
 /**
- * 参数配置
+ * 全局静态配置，应在应用启动时设置，运行期间不应按请求修改。
+ * 按请求修改会导致并发请求之间互相影响（串扰）。
+ *
  * @author panwm
  * @since 2024/7/10 0:02
  */
 public class TransViewProperties {
 
     /**
-     * 预览配置
+     * 预览配置（启动期全局配置，非请求级）
      */
     public static class View {
 
@@ -41,6 +43,52 @@ public class TransViewProperties {
         @Setter
         private static Duration timeout;
 
+        /**
+         * 是否移除转换结果水印
+         */
+        @Getter
+        @Setter
+        private static boolean removeWatermark = true;
+
+        public static class Excel {
+
+            /**
+             * 是否在预览前重新计算公式
+             */
+            @Getter
+            @Setter
+            private static boolean calculateFormula = false;
+
+            /**
+             * 预览的工作表索引（从 0 开始）
+             */
+            @Getter
+            @Setter
+            private static int sheetIndex = 0;
+
+            /**
+             * 是否每张工作表渲染为一页（默认 true）
+             */
+            @Getter
+            @Setter
+            private static boolean onePagePerSheet = true;
+
+            /**
+             * 最大渲染行数（-1 不限制）
+             */
+            @Getter
+            @Setter
+            private static int maxRows = -1;
+
+            /**
+             * 最大渲染列数（-1 不限制）
+             */
+            @Getter
+            @Setter
+            private static int maxColumns = -1;
+
+        }
+
         public static class Cad {
 
             /**
@@ -57,7 +105,46 @@ public class TransViewProperties {
             @Setter
             private static String[] shxFontsFolder;
 
+            /**
+             * CAD 渲染页面宽度（像素）
+             */
+            @Getter
+            @Setter
+            private static int pageWidth = 2549;
+
+            /**
+             * CAD 渲染页面高度（像素）
+             */
+            @Getter
+            @Setter
+            private static int pageHeight = 1228;
+
+            /**
+             * CAD 布局名称
+             */
+            @Getter
+            @Setter
+            private static String layout = "Model";
+
         }
+    }
+
+    /**
+     * 线程池配置
+     */
+    public static class Executor {
+
+        @Getter
+        @Setter
+        private static int corePoolSize = Math.max(1, Runtime.getRuntime().availableProcessors());
+
+        @Getter
+        @Setter
+        private static int maxPoolSize = Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
+
+        @Getter
+        @Setter
+        private static int queueCapacity = 200;
     }
 
     /**

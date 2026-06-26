@@ -22,11 +22,15 @@
 
     <modules>
         <module>transview-bom</module>
-        <module>transview-all</module>
         <module>transview-core</module>
         <module>transview-cad</module>
         <module>transview-poi</module>
+        <module>transview-servlet-javax</module>
+        <module>transview-servlet-jakarta</module>
+        <module>transview-all</module>
+        <module>transview-all-jdk8</module>
         <module>transview-demo</module>
+        <module>transview-demo-boot2</module>
     </modules>
 
     <properties>
@@ -44,6 +48,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+        <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
     </properties>
 
     <scm>
@@ -90,11 +95,33 @@
                 <artifactId>transview-poi</artifactId>
                 <version>${revision}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-servlet-javax</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-servlet-jakarta</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-all-jdk8</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
             <dependency>
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>${javax.servlet-api.version}</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

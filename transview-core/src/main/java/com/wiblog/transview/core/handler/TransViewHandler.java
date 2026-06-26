@@ -5,11 +5,11 @@ import com.wiblog.transview.core.common.Constant;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.utils.Util;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -20,6 +20,65 @@ import java.util.concurrent.*;
  * @since 2024/6/28 14:48
  */
 public abstract class TransViewHandler {
+
+    private static volatile ExecutorService PREVIEW_EXECUTOR;
+
+    private static final class ExecutorHolder {
+        static final ExecutorService DEFAULT = createExecutor(
+                TransViewProperties.Executor.getCorePoolSize(),
+                TransViewProperties.Executor.getMaxPoolSize(),
+                TransViewProperties.Executor.getQueueCapacity()
+        );
+    }
+
+    private static ExecutorService createExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        return new ThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueCapacity),
+                new ThreadFactory() {
+                    private final java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "transview-preview-" + index.getAndIncrement());
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+                },
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+    }
+
+    /**
+     * 自定义线程池，覆盖默认配置
+     */
+    public static void initExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        validateExecutorConfig(corePoolSize, maxPoolSize, queueCapacity);
+        ExecutorService oldExecutor = PREVIEW_EXECUTOR;
+        PREVIEW_EXECUTOR = createExecutor(corePoolSize, maxPoolSize, queueCapacity);
+        if (oldExecutor != null) {
+            oldExecutor.shutdown();
+        }
+    }
+
+    private static ExecutorService getExecutor() {
+        return PREVIEW_EXECUTOR != null ? PREVIEW_EXECUTOR : ExecutorHolder.DEFAULT;
+    }
+
+    private static void validateExecutorConfig(int corePoolSize, int maxPoolSize, int queueCapacity) {
+        if (corePoolSize <= 0) {
+            throw new IllegalArgumentException("corePoolSize 必须大于 0");
+        }
+        if (maxPoolSize < corePoolSize) {
+            throw new IllegalArgumentException("maxPoolSize 必须大于等于 corePoolSize");
+        }
+        if (queueCapacity <= 0) {
+            throw new IllegalArgumentException("queueCapacity 必须大于 0");
+        }
+    }
 
     protected TransViewHandler() {
 
@@ -36,7 +95,9 @@ public abstract class TransViewHandler {
     public abstract void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception;
 
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, File targetFile) throws Exception {
-        convertHandler(sourceExtensionEnum, targetExtensionEnum, inputStream, Files.newOutputStream(targetFile.toPath()));
+        try (OutputStream outputStream = Files.newOutputStream(targetFile.toPath())) {
+            convertHandler(sourceExtensionEnum, targetExtensionEnum, inputStream, outputStream);
+        }
     }
 
     /**
@@ -47,67 +108,61 @@ public abstract class TransViewHandler {
     public abstract List<StrategyTypeEnum> strategyTypeEnums();
 
     /**
-     * 文件写入到 HttpServletResponse
+     * 文件写入到 OutputStream
      *
      * @param inputStream  文件流
-     * @param outputStream HttpServletResponse 输出流
+     * @param outputStream 输出流
      * @param extension    文件后缀
      * @throws Exception 异常
      */
-    public abstract void viewHandler(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) throws Exception;
+    public abstract void viewHandler(InputStream inputStream, OutputStream outputStream, String extension) throws Exception;
 
     /**
-     * 处理响应结果
+     * 核心预览逻辑（不含 HTTP 头处理，由适配层负责）
      *
      * @param inputStream 文件流
      * @param extension   文件后缀
+     * @param outputStream 输出流
      */
-    public void handlerResponse(InputStream inputStream, String extension, HttpServletResponse response) {
-        // 设置 HttpServletResponse 的内容类型和输出
-        response.setCharacterEncoding("UTF-8");
-        ServletOutputStream outputStream = null;
+    public void handlerCore(InputStream inputStream, String extension, OutputStream outputStream) {
         try {
-            outputStream = response.getOutputStream();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        handlerViewResponse(inputStream, outputStream, extension, response);
-    }
-
-    private void handlerViewResponse(InputStream inputStream, ServletOutputStream outputStream, String extension, HttpServletResponse response) {
-        try {
-            // 超时设置
             if (TransViewProperties.View.getTimeout() != null) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Path resultFile = Files.createTempFile("transview-preview-", "." + extension);
                 Callable<Void> conversionTask = () -> {
-                    try {
-                        response.setContentType(StrategyTypeEnum.getMediaType(extension));
-                        viewHandler(inputStream, outputStream, extension, response);
-
-                    } catch (Exception e) {
-                        return null;
+                    try (OutputStream out = Files.newOutputStream(resultFile)) {
+                        viewHandler(inputStream, out, extension);
                     }
                     return null;
                 };
-                // 超时取消
-                Future<Void> future = executor.submit(conversionTask);
+                Future<Void> future;
+                try {
+                    future = getExecutor().submit(conversionTask);
+                } catch (RejectedExecutionException e) {
+                    throw new RejectedExecutionException("503");
+                }
                 try {
                     future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                    Files.copy(resultFile, outputStream);
                 } catch (TimeoutException e) {
                     future.cancel(true);
-                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    response.setContentType(Constant.MediaType.HTML_VALUE);
-                    // 文件不存在
-                    outputStream.write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes());
+                    throw new RuntimeException("timeout");
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    }
+                    throw new RuntimeException("预览 " + extension + " 文件失败", cause);
                 } finally {
-                    executor.shutdown();
+                    try {
+                        Files.deleteIfExists(resultFile);
+                    } catch (IOException ignored) {
+                    }
                 }
             } else {
-                response.setContentType(StrategyTypeEnum.getMediaType(extension));
-                viewHandler(inputStream, outputStream, extension, response);
+                viewHandler(inputStream, outputStream, extension);
             }
-            response.flushBuffer();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
         }
@@ -118,23 +173,24 @@ public abstract class TransViewHandler {
      *
      * @param inputStream         文件流
      * @param filenameOrExtension 文件名或后缀
-     * @param response            响应
+     * @param outputStream        输出流
      */
-    public void preview(InputStream inputStream, String filenameOrExtension, HttpServletResponse response) {
+    public void preview(InputStream inputStream, String filenameOrExtension, OutputStream outputStream) {
         check(filenameOrExtension);
-        handlerResponse(inputStream, Util.getExtensionOrFilename(filenameOrExtension), response);
+        handlerCore(inputStream, Util.getExtensionOrFilename(filenameOrExtension), outputStream);
     }
 
     /**
      * 预览文件
      *
-     * @param file 文件
+     * @param file         文件
+     * @param outputStream 输出流
      */
-    public void preview(File file, HttpServletResponse response) {
-        String extension = Util.getExtensionOrFilename(file.getName());
+    public void preview(File file, OutputStream outputStream) {
+        String extension = Util.getExtension(file.getName());
         check(extension);
-        try {
-            handlerResponse(Files.newInputStream(file.toPath()), extension, response);
+        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+            handlerCore(inputStream, extension, outputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -147,10 +203,10 @@ public abstract class TransViewHandler {
      * @param outputStream 输出文件流
      */
     public void convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream) {
-        try {
-            String extension = Util.getExtension(file.getName());
+        String extension = Util.getExtension(file.getName());
+        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             check(extension);
-            convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, Files.newInputStream(file.toPath()), outputStream);
+            convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, inputStream, outputStream);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -182,5 +238,9 @@ public abstract class TransViewHandler {
         }
     }
 
+    public static boolean isPlainType(String extension) {
+        StrategyTypeEnum strategy = StrategyTypeEnum.getStrategy(extension);
+        return strategy != null && StrategyTypeEnum.PLAIN_TYPES.contains(strategy);
+    }
 
 }
