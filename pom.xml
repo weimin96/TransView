@@ -29,6 +29,9 @@
         <module>transview-servlet-jakarta</module>
         <module>transview-all</module>
         <module>transview-all-jdk8</module>
+        <module>transview-spring-boot2-starter</module>
+        <module>transview-spring-boot-starter</module>
+        <module>transview-spring-boot4-starter</module>
         <module>transview-demo</module>
         <module>transview-demo-boot2</module>
         <module>transview-demo-boot4</module>
@@ -109,6 +112,21 @@
             <dependency>
                 <groupId>io.github.weimin96</groupId>
                 <artifactId>transview-all-jdk8</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-spring-boot2-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-spring-boot4-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -226,11 +244,11 @@
             <id>release</id>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>central</id>
                     <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>central</id>
                     <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
@@ -315,11 +333,11 @@
             </activation>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>central</id>
                     <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>central</id>
                     <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>

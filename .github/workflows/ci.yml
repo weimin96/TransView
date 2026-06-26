@@ -18,11 +18,11 @@ jobs:
       matrix:
         include:
           - java: '8'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-all-jdk8,transview-demo-boot2'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-all-jdk8,transview-spring-boot2-starter,transview-demo-boot2'
           - java: '17'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-demo'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-spring-boot-starter,transview-demo'
           - java: '21'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-demo-boot4'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-spring-boot4-starter,transview-demo-boot4'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +74,7 @@ jobs:
           fi
       - name: Package
         if: env.version_changed == 'true'
-        run: mvn clean package -DskipTests -Dlicense.skip=true -B
+        run: mvn clean package -DskipTests -Dlicense.skip=true -B -pl transview-bom,transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-servlet-jakarta,transview-all,transview-all-jdk8,transview-spring-boot2-starter,transview-spring-boot-starter,transview-spring-boot4-starter -am
       - name: Stage artifacts
         if: env.version_changed == 'true'
         run: |
@@ -86,6 +86,9 @@ jobs:
           cp transview-poi/target/*.jar staging
           cp transview-servlet-javax/target/*.jar staging
           cp transview-servlet-jakarta/target/*.jar staging
+          cp transview-spring-boot2-starter/target/*.jar staging
+          cp transview-spring-boot-starter/target/*.jar staging
+          cp transview-spring-boot4-starter/target/*.jar staging
       - uses: ncipollo/release-action@v1
         if: env.version_changed == 'true'
         with:

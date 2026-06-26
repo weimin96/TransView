@@ -62,12 +62,7 @@ public class TransViewContext {
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        response.setCharacterEncoding("UTF-8");
-        try {
-            com.wiblog.transview.core.context.TransViewContext.preview(inputStream, filename, response.getOutputStream());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        previewConverted(inputStream, filename, extension, response);
     }
 
     private static void previewPlain(File file, String extension, HttpServletRequest request, HttpServletResponse response) {
@@ -116,22 +111,44 @@ public class TransViewContext {
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
-            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-            response.setContentType("text/html;charset=UTF-8");
-            try {
-                response.getOutputStream().write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            } catch (Exception ignored) {
-            }
+            writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
-            response.reset();
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType("text/html;charset=UTF-8");
-            try {
-                response.getOutputStream().write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            } catch (Exception ignored) {
-            }
+            writeTimeout(response);
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        }
+    }
+
+    private static void previewConverted(InputStream inputStream, String filename, String extension, HttpServletResponse response) {
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(StrategyTypeEnum.getMediaType(extension));
+        try {
+            com.wiblog.transview.core.context.TransViewContext.preview(inputStream, filename, response.getOutputStream());
+        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
+            writeBusy(response);
+        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
+            writeTimeout(response);
+        } catch (Exception e) {
+            throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        }
+    }
+
+    private static void writeBusy(HttpServletResponse response) {
+        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.setContentType("text/html;charset=UTF-8");
+        try {
+            response.getOutputStream().write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void writeTimeout(HttpServletResponse response) {
+        response.reset();
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        response.setContentType("text/html;charset=UTF-8");
+        try {
+            response.getOutputStream().write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
         }
     }
 }
