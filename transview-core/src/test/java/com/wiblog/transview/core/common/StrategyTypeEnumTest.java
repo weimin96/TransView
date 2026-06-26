@@ -1,20 +1,20 @@
 package com.wiblog.transview.core.common;
 
 import com.wiblog.transview.core.bean.TransViewProperties;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class StrategyTypeEnumTest {
+public class StrategyTypeEnumTest {
 
-    @AfterEach
-    void restoreCadConvertType() {
+    @After
+    public void restoreCadConvertType() {
         TransViewProperties.View.Cad.setConvertType(CadConvertType.SVG);
     }
 
     @Test
-    void getMediaTypeUsesCurrentCadConvertType() {
+    public void getMediaTypeUsesCurrentCadConvertType() {
         TransViewProperties.View.Cad.setConvertType(CadConvertType.PDF);
         assertThat(StrategyTypeEnum.getMediaType("dwg")).isEqualTo(Constant.MediaType.PDF_VALUE);
 

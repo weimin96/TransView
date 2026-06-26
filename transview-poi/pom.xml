@@ -23,7 +23,6 @@
         <dependency>
             <groupId>io.github.weimin96</groupId>
             <artifactId>transview-core</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

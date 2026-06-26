@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * javax.servlet 适配层 — 提供带 HttpServletResponse 的预览入口
@@ -102,24 +101,20 @@ public class TransViewContext {
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
-        } catch (RejectedExecutionException e) {
+        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             response.setContentType("text/html;charset=UTF-8");
             try {
                 response.getOutputStream().write("<html><head><title>503 -busy</title></head><body><h1>服务繁忙，请稍后重试</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
             } catch (Exception ignored) {
             }
-        } catch (RuntimeException e) {
-            if ("timeout".equals(e.getMessage())) {
-                response.reset();
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.setContentType("text/html;charset=UTF-8");
-                try {
-                    response.getOutputStream().write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                } catch (Exception ignored) {
-                }
-            } else {
-                throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
+            response.reset();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("text/html;charset=UTF-8");
+            try {
+                response.getOutputStream().write("<html><head><title>500 -timeout</title></head><body><h1>timeout</h1></body></html>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            } catch (Exception ignored) {
             }
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);

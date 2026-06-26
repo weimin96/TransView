@@ -18,9 +18,11 @@ jobs:
       matrix:
         include:
           - java: '8'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-all-jdk8'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-all-jdk8,transview-demo-boot2'
           - java: '17'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-demo'
+          - java: '21'
+            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-demo-boot4'
     steps:
       - uses: actions/checkout@v3
         with:

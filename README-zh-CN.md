@@ -14,8 +14,9 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 | 环境 | JDK | Spring Boot | 聚合包 |
 |------|-----|-------------|--------|
-| JDK 17+ | 17+ | 3.x | `transview-all` |
 | JDK 8+ | 8+ | 2.x | `transview-all-jdk8` |
+| JDK 17+ | 17+ | 3.x | `transview-all` |
+| JDK 17+ | 17+ | 4.x | `transview-all` |
 
 ## 介绍
 

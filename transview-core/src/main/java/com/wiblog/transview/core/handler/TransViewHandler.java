@@ -138,14 +138,14 @@ public abstract class TransViewHandler {
                 try {
                     future = getExecutor().submit(conversionTask);
                 } catch (RejectedExecutionException e) {
-                    throw new RejectedExecutionException("503");
+                    throw new com.wiblog.transview.core.exception.PreviewBusyException("预览服务繁忙");
                 }
                 try {
                     future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
                     Files.copy(resultFile, outputStream);
                 } catch (TimeoutException e) {
                     future.cancel(true);
-                    throw new RuntimeException("timeout");
+                    throw new com.wiblog.transview.core.exception.PreviewTimeoutException("预览超时");
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
                     if (cause instanceof RuntimeException) {

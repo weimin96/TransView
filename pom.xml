@@ -31,6 +31,7 @@
         <module>transview-all-jdk8</module>
         <module>transview-demo</module>
         <module>transview-demo-boot2</module>
+        <module>transview-demo-boot4</module>
     </modules>
 
     <properties>
@@ -115,6 +116,7 @@
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta.servlet-api.version}</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>
