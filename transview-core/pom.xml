@@ -35,6 +35,8 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>${java.version}</release>
+                            <source>${java.version}</source>
+                            <target>${java.version}</target>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -47,6 +49,11 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
         </dependency>
 
         <!-- svg解析 -->

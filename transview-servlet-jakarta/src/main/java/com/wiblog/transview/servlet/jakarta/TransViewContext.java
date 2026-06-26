@@ -97,6 +97,7 @@ public class TransViewContext {
                 return;
             }
         }
+        response.setHeader("Accept-Ranges", "bytes");
         response.setContentLengthLong(file.length());
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());

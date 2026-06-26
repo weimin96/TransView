@@ -30,14 +30,19 @@ public enum StrategyTypeEnum {
     JPG("jpg", Constant.MediaType.IMAGE_JPEG_VALUE),
     JPEG("jpeg", Constant.MediaType.IMAGE_JPEG_VALUE),
     PNG("png", Constant.MediaType.IMAGE_PNG_VALUE),
-    GIF("gif", Constant.MediaType.IMAGE_GIF_VALUE)
+    GIF("gif", Constant.MediaType.IMAGE_GIF_VALUE),
+    WEBP("webp", Constant.MediaType.IMAGE_WEBP_VALUE),
+    BMP("bmp", Constant.MediaType.IMAGE_BMP_VALUE),
+    LOG("log", Constant.MediaType.TXT_VALUE),
+    XML("xml", Constant.MediaType.XML_VALUE),
+    YAML("yaml", Constant.MediaType.YAML_VALUE)
     ;
 
     final String type;
 
     final String mediaType;
 
-    public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, SVG, PDF, TXT, JSON, CSV, HTML, MP4, AVI);
+    public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, WEBP, BMP, SVG, PDF, TXT, LOG, JSON, CSV, XML, YAML, HTML, MP4, AVI);
 
     // TODO: Word 暂不支持，无 WordHandler 实现
     public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);

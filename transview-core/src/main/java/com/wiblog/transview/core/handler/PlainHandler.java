@@ -2,6 +2,7 @@ package com.wiblog.transview.core.handler;
 
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
+import com.wiblog.transview.core.utils.HtmlSanitizer;
 import com.wiblog.transview.core.utils.SVGUtil;
 import org.apache.commons.io.IOUtils;
 
@@ -19,7 +20,11 @@ public class PlainHandler extends TransViewHandler {
 
     @Override
     public void viewHandler(InputStream inputStream, OutputStream outputStream, String extension) throws Exception {
-        IOUtils.copy(inputStream, outputStream);
+        if ("html".equalsIgnoreCase(extension)) {
+            HtmlSanitizer.sanitize(inputStream, outputStream);
+        } else {
+            IOUtils.copy(inputStream, outputStream);
+        }
     }
 
     @Override

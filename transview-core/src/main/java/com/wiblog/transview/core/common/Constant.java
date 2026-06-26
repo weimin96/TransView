@@ -36,6 +36,14 @@ public class Constant {
         String IMAGE_PNG_VALUE = "image/png";
 
         String IMAGE_GIF_VALUE = "image/gif";
+
+        String IMAGE_WEBP_VALUE = "image/webp";
+
+        String IMAGE_BMP_VALUE = "image/bmp";
+
+        String XML_VALUE = "application/xml";
+
+        String YAML_VALUE = "text/yaml";
     }
 
 }

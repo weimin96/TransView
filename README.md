@@ -24,9 +24,9 @@ A universal tool for online preview/conversion of documents. Supports SPI plug-i
 
 Supported preview formats:
 
-* Images: jpg, jpeg, png, gif, svg
+* Images: jpg, jpeg, png, gif, webp, bmp, svg
 * Documents: pdf, xls, xlsx, csv
-* Text: txt, json, html
+* Text: txt, log, json, xml, yaml, html (sanitized)
 * Video: mp4, avi
 * CAD: dwg, dxf
 
