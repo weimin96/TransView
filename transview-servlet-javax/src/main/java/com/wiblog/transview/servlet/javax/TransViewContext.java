@@ -1,15 +1,13 @@
 package com.wiblog.transview.servlet.javax;
 
 import com.wiblog.transview.core.common.StrategyTypeEnum;
+import com.wiblog.transview.core.utils.HttpRangeUtil;
 import com.wiblog.transview.core.utils.Util;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.File;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * javax.servlet 适配层 — 提供带 HttpServletResponse 的预览入口
@@ -76,15 +74,31 @@ public class TransViewContext {
         response.setCharacterEncoding("UTF-8");
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         long lastModified = file.lastModified();
+        String etag = HttpRangeUtil.generateETag(file.length(), lastModified);
         response.setDateHeader("Last-Modified", lastModified);
         response.setHeader("Cache-Control", "public, max-age=3600");
-        response.setHeader("ETag", "W/\"" + file.length() + "-" + lastModified + "\"");
+        response.setHeader("ETag", etag);
         if (request != null) {
-            if (isNotModified(file, request)) {
+            if (HttpRangeUtil.isNotModified(etag, request.getHeader("If-None-Match"), lastModified, request.getHeader("If-Modified-Since"))) {
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                 return;
             }
-            if (handleRange(file, request, response)) {
+            HttpRangeUtil.Range range = HttpRangeUtil.parseRange(request.getHeader("Range"), file.length());
+            if (range != null) {
+                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + file.length());
+                response.setHeader("Accept-Ranges", "bytes");
+                response.setContentLengthLong(range.contentLength());
+                try {
+                    HttpRangeUtil.writeRange(file, range.start, range.end, response.getOutputStream());
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return;
+            }
+            if (request.getHeader("Range") != null) {
+                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                response.setHeader("Content-Range", "bytes */" + file.length());
                 return;
             }
         }
@@ -119,107 +133,5 @@ public class TransViewContext {
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
         }
-    }
-
-    private static boolean isNotModified(File file, HttpServletRequest request) {
-        long lastModified = file.lastModified();
-        String etag = "W/\"" + file.length() + "-" + lastModified + "\"";
-
-        String ifNoneMatch = request.getHeader("If-None-Match");
-        if (ifNoneMatch != null && ifNoneMatch.equals(etag)) {
-            return true;
-        }
-
-        String ifModifiedSinceHeader = request.getHeader("If-Modified-Since");
-        if (ifModifiedSinceHeader != null) {
-            try {
-                long ifModifiedSince = ZonedDateTime.parse(ifModifiedSinceHeader, DateTimeFormatter.RFC_1123_DATE_TIME)
-                        .toInstant()
-                        .toEpochMilli();
-                if (ifModifiedSince > 0 && lastModified / 1000 <= ifModifiedSince / 1000) {
-                    return true;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean handleRange(File file, HttpServletRequest request, HttpServletResponse response) {
-        String rangeHeader = request.getHeader("Range");
-        if (rangeHeader == null) {
-            return false;
-        }
-        if (!rangeHeader.startsWith("bytes=")) {
-            return setRangeNotSatisfiable(response, file.length());
-        }
-
-        long fileLength = file.length();
-        long start = 0;
-        long end = fileLength - 1;
-
-        try {
-            String rangeValue = rangeHeader.trim().substring("bytes=".length());
-            if (rangeValue.contains(",")) {
-                return setRangeNotSatisfiable(response, fileLength);
-            }
-            if (rangeValue.startsWith("-")) {
-                long suffixLength = Long.parseLong(rangeValue.substring(1));
-                if (suffixLength <= 0) {
-                    return setRangeNotSatisfiable(response, fileLength);
-                }
-                start = Math.max(0, fileLength - suffixLength);
-            } else if (rangeValue.endsWith("-")) {
-                start = Long.parseLong(rangeValue.substring(0, rangeValue.length() - 1));
-            } else {
-                String[] parts = rangeValue.split("-");
-                if (parts.length != 2) {
-                    return setRangeNotSatisfiable(response, fileLength);
-                }
-                start = Long.parseLong(parts[0]);
-                end = Long.parseLong(parts[1]);
-            }
-        } catch (Exception e) {
-            return setRangeNotSatisfiable(response, fileLength);
-        }
-
-        if (start < 0 || start >= fileLength || end < start) {
-            return setRangeNotSatisfiable(response, fileLength);
-        }
-
-        if (end >= fileLength) {
-            end = fileLength - 1;
-        }
-
-        long contentLength = end - start + 1;
-        response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-        response.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + fileLength);
-        response.setHeader("Accept-Ranges", "bytes");
-        response.setContentLengthLong(contentLength);
-
-        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file, "r");
-             java.io.OutputStream out = response.getOutputStream()) {
-            raf.seek(start);
-            byte[] buffer = new byte[8192];
-            long remaining = contentLength;
-            while (remaining > 0) {
-                int toRead = (int) Math.min(buffer.length, remaining);
-                int read = raf.read(buffer, 0, toRead);
-                if (read <= 0) break;
-                out.write(buffer, 0, read);
-                remaining -= read;
-            }
-        } catch (java.io.IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return true;
-    }
-
-    private static boolean setRangeNotSatisfiable(HttpServletResponse response, long fileLength) {
-        response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-        response.setHeader("Content-Range", "bytes */" + fileLength);
-        return true;
     }
 }
