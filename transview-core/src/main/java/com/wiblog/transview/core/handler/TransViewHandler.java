@@ -206,7 +206,9 @@ public abstract class TransViewHandler {
         String extension = Util.getExtension(file.getName());
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             check(extension);
-            convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, inputStream, outputStream);
+            convertCore(inputStream, ExtensionEnum.getByValue(extension), extensionEnum, outputStream);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -219,9 +221,60 @@ public abstract class TransViewHandler {
             if (extensionEnum == null) {
                 throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);
             }
-            convertHandler(ExtensionEnum.getByValue(extension), extensionEnum, inputStream, targetFile);
+            convertCore(inputStream, ExtensionEnum.getByValue(extension), extensionEnum,
+                    Files.newOutputStream(targetFile.toPath()));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 核心转换逻辑（带超时和线程池保护）
+     */
+    private void convertCore(InputStream inputStream, ExtensionEnum sourceExt,
+                             ExtensionEnum targetExt, OutputStream outputStream) {
+        try {
+            if (TransViewProperties.View.getTimeout() != null) {
+                Path resultFile = Files.createTempFile("transview-convert-", "." + targetExt.getValue());
+                Callable<Void> task = () -> {
+                    try (OutputStream out = Files.newOutputStream(resultFile)) {
+                        convertHandler(sourceExt, targetExt, inputStream, out);
+                    }
+                    return null;
+                };
+                Future<Void> future;
+                try {
+                    future = getExecutor().submit(task);
+                } catch (RejectedExecutionException e) {
+                    throw new com.wiblog.transview.core.exception.PreviewBusyException("转换服务繁忙");
+                }
+                try {
+                    future.get(TransViewProperties.View.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                    Files.copy(resultFile, outputStream);
+                } catch (TimeoutException e) {
+                    future.cancel(true);
+                    throw new com.wiblog.transview.core.exception.PreviewTimeoutException("转换超时");
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    }
+                    throw new RuntimeException("文件转换失败", cause);
+                } finally {
+                    try {
+                        Files.deleteIfExists(resultFile);
+                    } catch (IOException ignored) {
+                    }
+                }
+            } else {
+                convertHandler(sourceExt, targetExt, inputStream, outputStream);
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("文件转换失败", e);
         }
     }
 
