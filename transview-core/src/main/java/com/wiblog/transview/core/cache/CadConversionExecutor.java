@@ -62,7 +62,7 @@ public class CadConversionExecutor {
             try {
                 task.call();
             } catch (Exception e) {
-                deleteQuietly(tmpPath);
+                throw new RuntimeException(e);
             } finally {
                 activeTasks.decrementAndGet();
             }

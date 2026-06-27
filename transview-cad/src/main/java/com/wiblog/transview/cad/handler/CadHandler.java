@@ -200,13 +200,19 @@ public class CadHandler extends TransViewHandler {
                     FAILED_TASKS.remove(cacheKey);
                 } catch (Exception e) {
                     FAILED_TASKS.put(cacheKey, System.currentTimeMillis());
+                    deleteQuietly(finalTmpPath);
                     throw e;
                 } finally {
                     RUNNING_TASKS.remove(cacheKey);
                 }
                 return null;
             }, tmpPath, cacheKey);
-            RUNNING_TASKS.put(cacheKey, future);
+            Future<?> existing = RUNNING_TASKS.putIfAbsent(cacheKey, future);
+            if (existing != null) {
+                // 已有同 key 任务在跑，取消当前重复任务
+                future.cancel(true);
+                deleteQuietly(tmpPath);
+            }
         } catch (RejectedExecutionException e) {
             deleteQuietly(tmpPath);
         }
@@ -242,13 +248,18 @@ public class CadHandler extends TransViewHandler {
                         FAILED_TASKS.remove(key);
                     } catch (Exception e) {
                         FAILED_TASKS.put(key, System.currentTimeMillis());
+                        deleteQuietly(finalTmpPath);
                         throw e;
                     } finally {
                         RUNNING_TASKS.remove(key);
                     }
                     return null;
                 }, tmpPath, key);
-                RUNNING_TASKS.put(key, future);
+                Future<?> existing = RUNNING_TASKS.putIfAbsent(key, future);
+                if (existing != null) {
+                    future.cancel(true);
+                    deleteQuietly(tmpPath);
+                }
             } catch (RejectedExecutionException e) {
                 deleteQuietly(tmpPath);
             }

@@ -296,7 +296,7 @@ public class DiskCacheManager {
                     if (currentSize <= maxDisk && getFreeSpace() >= minFree) {
                         break;
                     }
-                    long entrySize = entry.resultSize;
+                    long entrySize = calculateDirSize(entry.entryDir);
                     deleteRecursive(entry.entryDir);
                     index.remove(entry.cacheKey);
                     currentSize -= entrySize;
