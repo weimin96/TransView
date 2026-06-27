@@ -137,3 +137,50 @@ import com.wiblog.transview.core.context.TransViewContext;
 
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
 ```
+
+### Configuration
+
+```yaml
+transview:
+  view:
+    timeout: 30s
+    remove-watermark: true
+    fonts-folder: /path/to/fonts
+    cad:
+      convert-type: SVG          # SVG | PDF
+      page-width: 2549
+      page-height: 1228
+      layout: Model              # Default layout
+      extra-layouts:             # Pre-cache other layouts (generated in background after first access)
+        - Layout1
+        - Layout2
+      shx-fonts-folder:
+        - /path/to/shx-fonts
+
+  # General thread pool
+  executor:
+    core-pool-size: 4
+    max-pool-size: 8
+    queue-capacity: 200
+
+  # CAD dedicated thread pool (isolated, memory-aware throttling)
+  cad-executor:
+    core-pool-size: 1
+    max-pool-size: 2
+    queue-capacity: 20
+    min-free-memory-mb: 256      # Reject new CAD tasks when free memory < this
+    task-timeout-ms: 120000      # Per-task timeout 2 minutes
+
+  # DWG disk cache (caches CAD conversion results)
+  cache:
+    enabled: true
+    root-dir: /data/transview-cache
+    max-disk-size: 21474836480    # 20GB
+    max-entry-age: 604800000      # 7 days (ms)
+    cleanup-interval: 600000      # 10 minutes (ms)
+    min-free-space: 5368709120    # 5GB
+```
+
+Cache key is composed of file SHA-256 + conversion parameters, ensuring different content or configurations never collide. Cached results are stored on disk; only the index is kept in memory.
+
+CAD first-access flow: return thumbnail (800x600 PNG) → async generate full SVG/PDF → async pre-generate extraLayouts.

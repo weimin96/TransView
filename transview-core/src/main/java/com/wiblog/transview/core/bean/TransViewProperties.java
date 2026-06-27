@@ -120,17 +120,25 @@ public class TransViewProperties {
             private static int pageHeight = 1228;
 
             /**
-             * CAD 布局名称
+             * CAD 默认布局名称
              */
             @Getter
             @Setter
             private static String layout = "Model";
 
+            /**
+             * CAD 预生成缓存的布局列表（默认布局之外的其他布局）
+             * 启动后首次访问某 DWG 时，后台异步预生成这些布局的缓存
+             */
+            @Getter
+            @Setter
+            private static String[] extraLayouts;
+
         }
     }
 
     /**
-     * 线程池配置
+     * 通用线程池配置
      */
     public static class Executor {
 
@@ -145,6 +153,68 @@ public class TransViewProperties {
         @Getter
         @Setter
         private static int queueCapacity = 200;
+    }
+
+    /**
+     * CAD 专用线程池配置（与通用线程池隔离）
+     */
+    public static class CadExecutor {
+
+        @Getter
+        @Setter
+        private static int corePoolSize = 1;
+
+        @Getter
+        @Setter
+        private static int maxPoolSize = 2;
+
+        @Getter
+        @Setter
+        private static int queueCapacity = 20;
+
+        /** 最低可用内存（MB），低于此值拒绝新 CAD 任务 */
+        @Getter
+        @Setter
+        private static int minFreeMemoryMB = 256;
+
+        /** 单个 CAD 任务超时（毫秒） */
+        @Getter
+        @Setter
+        private static long taskTimeoutMs = 120000;
+    }
+
+    /**
+     * 磁盘缓存配置
+     */
+    public static class Cache {
+
+        @Getter
+        @Setter
+        private static boolean enabled = false;
+
+        @Getter
+        @Setter
+        private static String rootDir;
+
+        /** 最大磁盘占用（字节），默认 20GB */
+        @Getter
+        @Setter
+        private static long maxDiskSize = 20L * 1024 * 1024 * 1024;
+
+        /** 缓存条目最大存活时间（毫秒），默认 7 天 */
+        @Getter
+        @Setter
+        private static long maxEntryAge = 7L * 24 * 60 * 60 * 1000;
+
+        /** 清理间隔（毫秒），默认 10 分钟 */
+        @Getter
+        @Setter
+        private static long cleanupInterval = 10L * 60 * 1000;
+
+        /** 磁盘最低剩余空间（字节），默认 5GB */
+        @Getter
+        @Setter
+        private static long minFreeSpace = 5L * 1024 * 1024 * 1024;
     }
 
     /**

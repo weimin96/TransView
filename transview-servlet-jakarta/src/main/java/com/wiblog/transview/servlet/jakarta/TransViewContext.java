@@ -1,5 +1,7 @@
 package com.wiblog.transview.servlet.jakarta;
 
+import com.wiblog.transview.core.cache.CacheKeyUtil;
+import com.wiblog.transview.core.cache.DiskCacheManager;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.utils.HttpRangeUtil;
 import com.wiblog.transview.core.utils.Util;
@@ -8,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * jakarta.servlet 适配层 — 提供带 HttpServletResponse 的预览入口
@@ -35,6 +38,14 @@ public class TransViewContext {
         }
         if (com.wiblog.transview.core.handler.TransViewHandler.isPlainType(extension)) {
             previewPlain(file, extension, request, response);
+        } else if (isCachableType(extension)) {
+            File cached = lookupCache(file);
+            if (cached != null) {
+                String cachedExt = Util.getExtension(cached.getName());
+                previewPlain(cached, Util.isBlank(cachedExt) ? extension : cachedExt, request, response);
+            } else {
+                previewConverted(file, extension, response);
+            }
         } else {
             previewConverted(file, extension, response);
         }
@@ -131,6 +142,20 @@ public class TransViewContext {
             writeTimeout(response);
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        }
+    }
+
+    private static boolean isCachableType(String extension) {
+        return DiskCacheManager.getInstance().isReady()
+                && Arrays.asList("dwg", "dxf").contains(extension.toLowerCase());
+    }
+
+    private static File lookupCache(File file) {
+        try {
+            String cacheKey = CacheKeyUtil.generateCadCacheKey(file);
+            return DiskCacheManager.getInstance().get(cacheKey);
+        } catch (Exception e) {
+            return null;
         }
     }
 

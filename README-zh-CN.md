@@ -135,3 +135,50 @@ import com.wiblog.transview.core.context.TransViewContext;
 
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
 ```
+
+### 配置
+
+```yaml
+transview:
+  view:
+    timeout: 30s
+    remove-watermark: true
+    fonts-folder: /path/to/fonts
+    cad:
+      convert-type: SVG          # SVG | PDF
+      page-width: 2549
+      page-height: 1228
+      layout: Model              # 默认布局
+      extra-layouts:             # 预缓存的其他布局（首次访问后后台自动生成）
+        - Layout1
+        - Layout2
+      shx-fonts-folder:
+        - /path/to/shx-fonts
+
+  # 通用线程池
+  executor:
+    core-pool-size: 4
+    max-pool-size: 8
+    queue-capacity: 200
+
+  # CAD 专用线程池（独立于通用线程池，内存感知限流）
+  cad-executor:
+    core-pool-size: 1
+    max-pool-size: 2
+    queue-capacity: 20
+    min-free-memory-mb: 256      # 可用内存低于此值拒绝新 CAD 任务
+    task-timeout-ms: 120000      # 单任务超时 2 分钟
+
+  # DWG 磁盘缓存（缓存 CAD 转换结果，避免重复转换）
+  cache:
+    enabled: true
+    root-dir: /data/transview-cache
+    max-disk-size: 21474836480    # 20GB
+    max-entry-age: 604800000      # 7 天（毫秒）
+    cleanup-interval: 600000      # 10 分钟（毫秒）
+    min-free-space: 5368709120    # 5GB
+```
+
+缓存 Key 由文件内容 SHA-256 + 转换参数组成，确保同名不同内容或不同配置不会误命中。缓存结果落磁盘，内存只维护索引。
+
+CAD 首次访问流程：返回缩略图（800x600 PNG）→ 后台异步生成完整 SVG/PDF → 后台预生成 extraLayouts 中其他布局。

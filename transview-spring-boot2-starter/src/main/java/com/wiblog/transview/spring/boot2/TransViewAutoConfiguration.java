@@ -47,12 +47,39 @@ public class TransViewAutoConfiguration {
         com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setPageWidth(properties.getView().getCad().getPageWidth());
         com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setPageHeight(properties.getView().getCad().getPageHeight());
         com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setLayout(properties.getView().getCad().getLayout());
+        if (properties.getView().getCad().getExtraLayouts() != null) {
+            com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setExtraLayouts(properties.getView().getCad().getExtraLayouts());
+        }
 
         // Executor
         TransViewHandler.initExecutor(
                 properties.getExecutor().getCorePoolSize(),
                 properties.getExecutor().getMaxPoolSize(),
                 properties.getExecutor().getQueueCapacity()
+        );
+
+        // CAD Executor
+        TransViewHandler.initCadExecutor(
+                properties.getCadExecutor().getCorePoolSize(),
+                properties.getCadExecutor().getMaxPoolSize(),
+                properties.getCadExecutor().getQueueCapacity()
+        );
+
+        // Cache
+        com.wiblog.transview.core.bean.TransViewProperties.Cache.setEnabled(properties.getCache().isEnabled());
+        if (properties.getCache().getRootDir() != null) {
+            com.wiblog.transview.core.bean.TransViewProperties.Cache.setRootDir(properties.getCache().getRootDir());
+        }
+        com.wiblog.transview.core.bean.TransViewProperties.Cache.setMaxDiskSize(properties.getCache().getMaxDiskSize());
+        com.wiblog.transview.core.bean.TransViewProperties.Cache.setMaxEntryAge(properties.getCache().getMaxEntryAge());
+        com.wiblog.transview.core.bean.TransViewProperties.Cache.setCleanupInterval(properties.getCache().getCleanupInterval());
+        com.wiblog.transview.core.bean.TransViewProperties.Cache.setMinFreeSpace(properties.getCache().getMinFreeSpace());
+        com.wiblog.transview.core.cache.DiskCacheManager.getInstance().init();
+
+        // Font Index
+        com.wiblog.transview.core.cache.FontIndex.getInstance().init(
+                properties.getView().getCad().getShxFontsFolder(),
+                properties.getView().getFontsFolder()
         );
     }
 }
