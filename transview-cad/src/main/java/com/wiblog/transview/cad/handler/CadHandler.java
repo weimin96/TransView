@@ -122,20 +122,31 @@ public class CadHandler extends TransViewHandler {
             return;
         }
 
-        // 3. 无缓存 — 生成缩略图 + 后台完整转换
-        byte[] thumbnailData = generateThumbnail(file, layout);
-        if (thumbnailData != null) {
-            cache.putThumbnail(cacheKey, thumbnailData);
-            kickOffAsync(file, cacheKey, layout, cache);
-            kickOffExtraLayoutsAsync(file, cache);
-            try {
+        // 3. 无缓存 — 加载一次 CadImage，复用于缩略图 + 完整转换
+        CadImage cadImage = null;
+        try {
+            cadImage = loadCadImage(file);
+
+            // 生成缩略图（复用已加载的 CadImage）
+            byte[] thumbnailData = renderThumbnail(cadImage, layout);
+            if (thumbnailData != null) {
+                cache.putThumbnail(cacheKey, thumbnailData);
+                // 异步完整转换（复用已加载的 CadImage，无需再次 Image.load）
+                kickOffAsyncWithImage(cadImage, file, cacheKey, layout, cache);
+                kickOffExtraLayoutsAsync(file, cache);
                 outputStream.write(thumbnailData);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } else {
+                // 缩略图失败，同步完整转换
+                convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
             }
-        } else {
-            convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
+        } catch (RuntimeException e) {
+            closeQuietly(cadImage);
+            throw e;
+        } catch (IOException e) {
+            closeQuietly(cadImage);
+            throw new RuntimeException(e);
         }
+        // 注意：cadImage 的生命周期交给异步任务管理，不在这里 close
     }
 
     @Override
@@ -354,12 +365,20 @@ public class CadHandler extends TransViewHandler {
         }
     }
 
-    private byte[] generateThumbnail(File file, String layout) {
-        CadImage cadImage = null;
+    /**
+     * 从文件加载 CadImage（只加载一次，后续复用）
+     */
+    private static CadImage loadCadImage(File file) throws IOException {
+        try (InputStream in = new FileInputStream(file)) {
+            return (CadImage) Image.load(in);
+        }
+    }
+
+    /**
+     * 从已加载的 CadImage 渲染缩略图（不重新加载文件）
+     */
+    private byte[] renderThumbnail(CadImage cadImage, String layout) {
         try {
-            try (InputStream in = new FileInputStream(file)) {
-                cadImage = (CadImage) Image.load(in);
-            }
             CadRasterizationOptions opts = new CadRasterizationOptions();
             opts.setPageWidth(THUMBNAIL_WIDTH);
             opts.setPageHeight(THUMBNAIL_HEIGHT);
@@ -376,10 +395,91 @@ public class CadHandler extends TransViewHandler {
             return buffer.toByteArray();
         } catch (Exception e) {
             return null;
-        } finally {
-            if (cadImage != null) {
-                cadImage.close();
+        }
+    }
+
+    /**
+     * 异步完整转换（复用已加载的 CadImage，不再重新加载文件）
+     */
+    private void kickOffAsyncWithImage(CadImage cadImage, File file, String cacheKey,
+                                       String layout, DiskCacheManager cache) {
+        if (isCooledDown(cacheKey) || RUNNING_TASKS.containsKey(cacheKey)) {
+            closeQuietly(cadImage);
+            return;
+        }
+
+        CompletableFuture<Void> placeholder = new CompletableFuture<>();
+        if (RUNNING_TASKS.putIfAbsent(cacheKey, placeholder) != null) {
+            closeQuietly(cadImage);
+            return;
+        }
+
+        Path tmpPath = null;
+        try {
+            tmpPath = cache.prepareDirect(cacheKey);
+            Path finalTmpPath = tmpPath;
+            Runnable onDone = () -> {
+                closeQuietly(cadImage);
+                RUNNING_TASKS.remove(cacheKey);
+            };
+            Future<?> realFuture = getConversionExecutor().submitAsync(() -> {
+                try {
+                    convertToTargetFile(cadImage, finalTmpPath, layout);
+                    String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
+                    cache.commitDirect(cacheKey, file, finalTmpPath, ext);
+                    FAILED_TASKS.remove(cacheKey);
+                } catch (Exception e) {
+                    FAILED_TASKS.put(cacheKey, System.currentTimeMillis());
+                    deleteQuietly(finalTmpPath);
+                    throw e;
+                }
+                return null;
+            }, tmpPath, cacheKey, onDone);
+            RUNNING_TASKS.replace(cacheKey, placeholder, realFuture);
+        } catch (RejectedExecutionException e) {
+            RUNNING_TASKS.remove(cacheKey, placeholder);
+            deleteQuietly(tmpPath);
+            closeQuietly(cadImage);
+        } catch (RuntimeException e) {
+            RUNNING_TASKS.remove(cacheKey, placeholder);
+            deleteQuietly(tmpPath);
+            closeQuietly(cadImage);
+            throw e;
+        }
+    }
+
+    /**
+     * 用已加载的 CadImage 写入目标文件（不重新加载）
+     */
+    private void convertToTargetFile(CadImage cadImage, Path targetPath, String layout) throws Exception {
+        CadRasterizationOptions rasterOptions = buildRasterOptions(layout);
+        try (OutputStream out = Files.newOutputStream(targetPath)) {
+            if (TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF) {
+                convertToPdf(out, rasterOptions, cadImage);
+            } else {
+                convertToSvg(out, rasterOptions, cadImage);
             }
+        }
+    }
+
+    private static void closeQuietly(CadImage cadImage) {
+        if (cadImage != null) {
+            try { cadImage.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * 保留的旧方法（供 viewHandler/convertHandler 等独立路径使用）
+     */
+    private byte[] generateThumbnail(File file, String layout) {
+        CadImage cadImage = null;
+        try {
+            cadImage = loadCadImage(file);
+            return renderThumbnail(cadImage, layout);
+        } catch (Exception e) {
+            return null;
+        } finally {
+            closeQuietly(cadImage);
         }
     }
 
