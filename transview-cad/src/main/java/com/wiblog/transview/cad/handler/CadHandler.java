@@ -356,7 +356,7 @@ public class CadHandler extends TransViewHandler {
     }
 
     /**
-     * 从文件加载 CadImage（只加载一次，后续复用）
+     * 从文件独立加载 CadImage（供缩略图渲染使用）
      */
     private static CadImage loadCadImage(File file) throws IOException {
         try (InputStream in = new FileInputStream(file)) {
@@ -365,7 +365,7 @@ public class CadHandler extends TransViewHandler {
     }
 
     /**
-     * 从已加载的 CadImage 渲染缩略图（不重新加载文件）
+     * 从已加载的 CadImage 渲染缩略图
      */
     private byte[] renderThumbnail(CadImage cadImage, String layout) {
         try {
