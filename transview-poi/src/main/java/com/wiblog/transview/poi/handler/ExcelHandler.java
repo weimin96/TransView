@@ -22,7 +22,7 @@ public class ExcelHandler extends TransViewHandler {
 
     @Override
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
-
+        throw new UnsupportedOperationException("Excel 格式转换暂不支持");
     }
 
     @Override

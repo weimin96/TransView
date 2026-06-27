@@ -20,6 +20,7 @@ import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.SVGUtil;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -69,6 +70,25 @@ public class CadHandler extends TransViewHandler {
             }
         }
         return conversionExecutor;
+    }
+
+    /**
+     * 重建 CAD 执行器（配置变更后调用）
+     */
+    public static void initCadExecutor() {
+        synchronized (CadHandler.class) {
+            CadConversionExecutor old = conversionExecutor;
+            conversionExecutor = new CadConversionExecutor(
+                    TransViewProperties.CadExecutor.getCorePoolSize(),
+                    TransViewProperties.CadExecutor.getMaxPoolSize(),
+                    TransViewProperties.CadExecutor.getQueueCapacity(),
+                    TransViewProperties.CadExecutor.getMinFreeMemoryMB(),
+                    TransViewProperties.CadExecutor.getTaskTimeoutMs()
+            );
+            if (old != null) {
+                old.shutdown();
+            }
+        }
     }
 
     private static final int THUMBNAIL_WIDTH = 800;
@@ -417,7 +437,7 @@ public class CadHandler extends TransViewHandler {
             cadImage.save(byteOutputStream, svgOptions);
             ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
             String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_CAD);
-            outputStream.write(transformedXml.getBytes());
+            outputStream.write(transformedXml.getBytes(StandardCharsets.UTF_8));
         } else {
             cadImage.save(outputStream, svgOptions);
         }

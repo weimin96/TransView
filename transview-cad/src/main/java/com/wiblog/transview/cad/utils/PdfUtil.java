@@ -21,11 +21,11 @@ import java.util.List;
 public class PdfUtil {
 
     public static void removeWatermark(ByteArrayInputStream pdfInputStream, OutputStream outputStream) {
-        try (PDDocument document = PDDocument.load(pdfInputStream)){
+        try (PDDocument document = PDDocument.load(pdfInputStream)) {
             removeAllText(document);
             document.save(outputStream);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("PDF 去水印失败", e);
         }
     }
 
