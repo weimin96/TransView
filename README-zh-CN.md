@@ -10,7 +10,7 @@
 
 README: [English](README.md) | [中文](README-zh-CN.md)
 
-## 支持
+## 支持环境
 
 | 环境 | JDK | Spring Boot | 聚合包 |
 |------|-----|-------------|--------|
@@ -22,15 +22,30 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 文档在线预览/转换通用工具。支持 `spi` 可拔插模式，能快速集成到 `Java` 项目中，实现文件在线预览和各种格式转换功能。
 
-在线预览支持格式：
-- 图片：jpg、jpeg、png、gif、webp、bmp、svg
-- 文档：pdf、xls、xlsx、csv
-- 文本：txt、log、json、xml、yaml、html（安全过滤）
-- 视频：mp4、avi
-- CAD：dwg、dxf
+### 支持格式
 
-格式转换支持格式：
+在线预览（零转换，直接输出）：
+- 图片：jpg、jpeg、png、gif、webp、bmp、svg
+- 文档：pdf
+- 文本：txt、log、csv、json、xml、yaml
+- 视频：mp4、avi
+- HTML：支持预览，自动进行安全过滤（白名单策略，移除 script/iframe/form 等危险元素）
+
+在线预览（需要转换）：
+- CAD：dwg、dxf（默认输出 SVG，可配置为 PDF）
+- Excel：xls、xlsx（输出 SVG）
+
+格式转换：
 - svg -> png
+
+### 核心特性
+
+- **HTTP 缓存支持**：零转换格式和 CAD 缓存结果均支持 Range 请求、ETag、Last-Modified、Cache-Control、304 Not Modified
+- **DWG 磁盘缓存**：CAD 转换结果落磁盘，相同文件+相同配置不会重复转换
+- **缩略图优先**：DWG 首次访问返回 800x600 缩略图（PNG），后台异步生成完整 SVG/PDF
+- **CAD 线程池隔离**：独立线程池 + 内存感知限流，大 DWG 不阻塞其他转换任务
+- **多布局缓存**：支持预缓存多个 DWG 布局，切换布局时直接命中缓存
+- **HTML 安全过滤**：基于 Jsoup 白名单策略，自动移除 script、iframe、事件处理器等
 
 ## 包含组件
 
@@ -104,7 +119,9 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 [demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
 
-#### 在线预览
+#### 在线预览（InputStream）
+
+适用于上传文件预览场景：
 
 **JDK 17+ / jakarta**
 
@@ -128,12 +145,33 @@ public void preview(MultipartFile file, HttpServletRequest request, HttpServletR
 }
 ```
 
+#### 在线预览（File）
+
+适用于磁盘文件预览场景，支持 HTTP 缓存（Range/ETag/304）和 DWG 磁盘缓存：
+
+```java
+@GetMapping("/preview")
+public void preview(File file, HttpServletRequest request, HttpServletResponse response) {
+    TransViewContext.preview(file, request, response);
+}
+```
+
+无 HttpServletRequest 的简化版本（不支持 Range/ETag）：
+
+```java
+TransViewContext.preview(file, response);
+```
+
 #### 格式转换
 
 ```java
 import com.wiblog.transview.core.context.TransViewContext;
 
+// 文件转换
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
+
+// 流转换
+TransViewContext.convert(InputStream inputStream, String extension, File targetFile);
 ```
 
 ### 配置
@@ -141,44 +179,99 @@ TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream ou
 ```yaml
 transview:
   view:
+    # 全局超时时间，预览和转换均受此约束
     timeout: 30s
+
+    # 是否移除 Aspose 转换结果水印（默认 true）
+    # 注意：去水印会将完整结果先写入堆内存，大 DWG 建议设为 false
     remove-watermark: true
+
+    # 全局字体目录（TTF/OTF）
     fonts-folder: /path/to/fonts
+
+    # CAD 配置
     cad:
-      convert-type: SVG          # SVG | PDF
+      # 输出格式：SVG（默认，适合浏览器预览）或 PDF（适合打印/高保真）
+      convert-type: SVG
+
+      # 渲染页面尺寸（像素）
       page-width: 2549
       page-height: 1228
-      layout: Model              # 默认布局
-      extra-layouts:             # 预缓存的其他布局（首次访问后后台自动生成）
+
+      # 默认布局名称
+      layout: Model
+
+      # 预缓存的其他布局列表
+      # 首次访问 DWG 后，后台自动预生成这些布局的缓存
+      # 切换布局时直接命中缓存，无需等待转换
+      extra-layouts:
         - Layout1
         - Layout2
+
+      # SHX 字体目录（CAD 专用，支持多个目录）
       shx-fonts-folder:
         - /path/to/shx-fonts
 
-  # 通用线程池
+    # Excel 配置
+    excel:
+      calculate-formula: false    # 预览前是否重新计算公式
+      sheet-index: 0              # 预览的工作表索引（从 0 开始）
+      one-page-per-sheet: true    # 是否每张工作表渲染为一页
+      max-rows: -1                # 最大渲染行数（-1 不限制）
+      max-columns: -1             # 最大渲染列数（-1 不限制）
+
+  # 通用线程池（用于非 CAD 的预览/转换任务）
   executor:
     core-pool-size: 4
     max-pool-size: 8
     queue-capacity: 200
 
-  # CAD 专用线程池（独立于通用线程池，内存感知限流）
+  # CAD 专用线程池（独立于通用线程池，避免大 DWG 阻塞其他任务）
   cad-executor:
     core-pool-size: 1
     max-pool-size: 2
     queue-capacity: 20
-    min-free-memory-mb: 256      # 可用内存低于此值拒绝新 CAD 任务
-    task-timeout-ms: 120000      # 单任务超时 2 分钟
+    # 可用 JVM 内存低于此值时拒绝新的 CAD 任务（MB）
+    min-free-memory-mb: 256
+    # 单个 CAD 任务超时时间（毫秒），超时后自动取消并清理临时文件
+    task-timeout-ms: 120000
 
-  # DWG 磁盘缓存（缓存 CAD 转换结果，避免重复转换）
+  # DWG 磁盘缓存配置
   cache:
+    # 是否启用缓存（默认 false）
     enabled: true
+
+    # 缓存根目录
     root-dir: /data/transview-cache
-    max-disk-size: 21474836480    # 20GB
-    max-entry-age: 604800000      # 7 天（毫秒）
-    cleanup-interval: 600000      # 10 分钟（毫秒）
-    min-free-space: 5368709120    # 5GB
+
+    # 最大磁盘占用（字节），默认 20GB
+    max-disk-size: 21474836480
+
+    # 缓存条目最大存活时间（毫秒），默认 7 天
+    max-entry-age: 604800000
+
+    # 缓存清理间隔（毫秒），默认 10 分钟
+    cleanup-interval: 600000
+
+    # 磁盘最低剩余空间（字节），低于此值强制清理最旧缓存，默认 5GB
+    min-free-space: 5368709120
 ```
 
-缓存 Key 由文件内容 SHA-256 + 转换参数组成，确保同名不同内容或不同配置不会误命中。缓存结果落磁盘，内存只维护索引。
+### DWG 缓存行为
 
-CAD 首次访问流程：返回缩略图（800x600 PNG）→ 后台异步生成完整 SVG/PDF → 后台预生成 extraLayouts 中其他布局。
+启用缓存后（`cache.enabled: true`），DWG 预览流程如下：
+
+```
+请求到达
+  ├─ 缓存命中完整结果（SVG/PDF）→ 直接返回，带 Range/ETag/304 支持
+  ├─ 缓存命中缩略图（PNG）→ 返回缩略图 + 后台异步生成完整结果
+  └─ 无缓存 → 生成缩略图返回 + 后台异步生成完整结果
+       └─ 完整结果生成后，后台自动预生成 extraLayouts 中其他布局
+```
+
+防护机制：
+- **缓存 Key**：SHA-256(文件内容) + 转换参数（布局/尺寸/格式/字体/去水印），确保不同内容或配置不会误命中
+- **in-flight 去重**：同一文件同一配置的并发请求只触发一次转换
+- **失败冷却**：转换失败的文件 5 分钟内不再重试，避免坏文件反复打爆 Aspose
+- **内存感知**：可用内存不足时拒绝新任务，返回 503 而非 OOM
+- **超时保护**：单个转换任务超时后自动取消并清理临时文件

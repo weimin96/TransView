@@ -22,17 +22,30 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 A universal tool for online preview/conversion of documents. Supports SPI plug-in mode, which can be quickly integrated into Java projects to achieve online file preview and various format conversion functions.
 
-Supported preview formats:
+### Supported Formats
 
-* Images: jpg, jpeg, png, gif, webp, bmp, svg
-* Documents: pdf, xls, xlsx, csv
-* Text: txt, log, json, xml, yaml, html (sanitized)
-* Video: mp4, avi
-* CAD: dwg, dxf
+Zero-conversion preview (direct output):
+- Images: jpg, jpeg, png, gif, webp, bmp, svg
+- Documents: pdf
+- Text: txt, log, csv, json, xml, yaml
+- Video: mp4, avi
+- HTML: preview with automatic security filtering (whitelist strategy, removes script/iframe/form etc.)
 
-Format conversion supports:
+Conversion preview:
+- CAD: dwg, dxf (default SVG, configurable to PDF)
+- Excel: xls, xlsx (output SVG)
 
-* svg -> png
+Format conversion:
+- svg -> png
+
+### Key Features
+
+- **HTTP caching**: Zero-conversion formats and CAD cache results support Range requests, ETag, Last-Modified, Cache-Control, 304 Not Modified
+- **DWG disk cache**: CAD conversion results stored on disk; same file + same config never re-converts
+- **Thumbnail first**: DWG first access returns 800x600 thumbnail (PNG), async generates full SVG/PDF in background
+- **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling, large DWGs don't block other tasks
+- **Multi-layout caching**: Pre-cache multiple DWG layouts, layout switching hits cache instantly
+- **HTML security filtering**: Jsoup whitelist strategy, automatically removes script, iframe, event handlers etc.
 
 ## Components
 
@@ -106,7 +119,9 @@ Format conversion supports:
 
 [demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
 
-#### Preview
+#### Preview (InputStream)
+
+For uploaded file preview:
 
 **JDK 17+ / jakarta**
 
@@ -130,12 +145,33 @@ public void preview(MultipartFile file, HttpServletRequest request, HttpServletR
 }
 ```
 
-#### Format conversion
+#### Preview (File)
+
+For disk file preview, supports HTTP caching (Range/ETag/304) and DWG disk cache:
+
+```java
+@GetMapping("/preview")
+public void preview(File file, HttpServletRequest request, HttpServletResponse response) {
+    TransViewContext.preview(file, request, response);
+}
+```
+
+Simplified version without HttpServletRequest (no Range/ETag support):
+
+```java
+TransViewContext.preview(file, response);
+```
+
+#### Format Conversion
 
 ```java
 import com.wiblog.transview.core.context.TransViewContext;
 
+// File conversion
 TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream outputStream);
+
+// Stream conversion
+TransViewContext.convert(InputStream inputStream, String extension, File targetFile);
 ```
 
 ### Configuration
@@ -143,44 +179,99 @@ TransViewContext.convert(File file, ExtensionEnum extensionEnum, OutputStream ou
 ```yaml
 transview:
   view:
+    # Global timeout for preview and conversion
     timeout: 30s
+
+    # Remove Aspose watermark from conversion results (default true)
+    # Note: watermark removal buffers full result in heap, set false for large DWGs
     remove-watermark: true
+
+    # Global font directory (TTF/OTF)
     fonts-folder: /path/to/fonts
+
+    # CAD configuration
     cad:
-      convert-type: SVG          # SVG | PDF
+      # Output format: SVG (default, best for browser preview) or PDF (for print/high-fidelity)
+      convert-type: SVG
+
+      # Render page dimensions (pixels)
       page-width: 2549
       page-height: 1228
-      layout: Model              # Default layout
-      extra-layouts:             # Pre-cache other layouts (generated in background after first access)
+
+      # Default layout name
+      layout: Model
+
+      # Extra layouts to pre-cache
+      # After first DWG access, these layouts are cached in background
+      # Switching layouts hits cache instantly
+      extra-layouts:
         - Layout1
         - Layout2
+
+      # SHX font directories (CAD-specific, supports multiple)
       shx-fonts-folder:
         - /path/to/shx-fonts
 
-  # General thread pool
+    # Excel configuration
+    excel:
+      calculate-formula: false    # Recalculate formulas before preview
+      sheet-index: 0              # Worksheet index to preview (0-based)
+      one-page-per-sheet: true    # Render each worksheet as one page
+      max-rows: -1                # Max rows to render (-1 = unlimited)
+      max-columns: -1             # Max columns to render (-1 = unlimited)
+
+  # General thread pool (for non-CAD preview/conversion tasks)
   executor:
     core-pool-size: 4
     max-pool-size: 8
     queue-capacity: 200
 
-  # CAD dedicated thread pool (isolated, memory-aware throttling)
+  # CAD dedicated thread pool (isolated from general pool)
   cad-executor:
     core-pool-size: 1
     max-pool-size: 2
     queue-capacity: 20
-    min-free-memory-mb: 256      # Reject new CAD tasks when free memory < this
-    task-timeout-ms: 120000      # Per-task timeout 2 minutes
+    # Reject new CAD tasks when available JVM memory is below this (MB)
+    min-free-memory-mb: 256
+    # Per-task timeout (ms), cancelled and tmp cleaned up on timeout
+    task-timeout-ms: 120000
 
-  # DWG disk cache (caches CAD conversion results)
+  # DWG disk cache configuration
   cache:
+    # Enable cache (default false)
     enabled: true
+
+    # Cache root directory
     root-dir: /data/transview-cache
-    max-disk-size: 21474836480    # 20GB
-    max-entry-age: 604800000      # 7 days (ms)
-    cleanup-interval: 600000      # 10 minutes (ms)
-    min-free-space: 5368709120    # 5GB
+
+    # Max disk usage (bytes), default 20GB
+    max-disk-size: 21474836480
+
+    # Max cache entry age (ms), default 7 days
+    max-entry-age: 604800000
+
+    # Cache cleanup interval (ms), default 10 minutes
+    cleanup-interval: 600000
+
+    # Min free disk space (bytes), force cleanup when below this, default 5GB
+    min-free-space: 5368709120
 ```
 
-Cache key is composed of file SHA-256 + conversion parameters, ensuring different content or configurations never collide. Cached results are stored on disk; only the index is kept in memory.
+### DWG Cache Behavior
 
-CAD first-access flow: return thumbnail (800x600 PNG) → async generate full SVG/PDF → async pre-generate extraLayouts.
+With cache enabled (`cache.enabled: true`), DWG preview flow:
+
+```
+Request arrives
+  ├─ Cache hit: full result (SVG/PDF) → return directly with Range/ETag/304 support
+  ├─ Cache hit: thumbnail (PNG) → return thumbnail + async generate full result
+  └─ No cache → generate thumbnail + return + async generate full result
+       └─ After full result, async pre-generate extraLayouts in background
+```
+
+Protection mechanisms:
+- **Cache key**: SHA-256(file content) + conversion params (layout/dimensions/format/fonts/watermark), ensures different content or config never collides
+- **In-flight dedup**: Concurrent requests for same file+config trigger only one conversion
+- **Failure cooldown**: Failed conversions are not retried for 5 minutes, prevents bad files from hammering Aspose
+- **Memory-aware**: Rejects new tasks when available memory is low, returns 503 instead of OOM
+- **Timeout protection**: Per-task timeout with automatic cancellation and tmp file cleanup
