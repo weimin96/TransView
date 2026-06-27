@@ -84,14 +84,18 @@ public class TransViewAutoConfiguration {
         Thread initThread = new Thread(() -> {
             try {
                 com.wiblog.transview.core.cache.DiskCacheManager.getInstance().init();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                java.util.logging.Logger.getLogger("TransView")
+                        .warning("缓存索引初始化失败: " + e.getMessage());
             }
             try {
                 com.wiblog.transview.core.cache.FontIndex.getInstance().init(
                         properties.getView().getCad().getShxFontsFolder(),
                         properties.getView().getFontsFolder()
                 );
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                java.util.logging.Logger.getLogger("TransView")
+                        .warning("字体索引初始化失败: " + e.getMessage());
             }
         }, "transview-init");
         initThread.setDaemon(true);

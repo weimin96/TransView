@@ -221,8 +221,9 @@ public abstract class TransViewHandler {
             if (extensionEnum == null) {
                 throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);
             }
-            convertCore(inputStream, ExtensionEnum.getByValue(extension), extensionEnum,
-                    Files.newOutputStream(targetFile.toPath()));
+            try (OutputStream out = Files.newOutputStream(targetFile.toPath())) {
+                convertCore(inputStream, ExtensionEnum.getByValue(extension), extensionEnum, out);
+            }
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
