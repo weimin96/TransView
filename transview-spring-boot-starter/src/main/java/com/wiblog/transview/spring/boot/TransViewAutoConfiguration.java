@@ -8,7 +8,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 /**
  * TransView 自动配置。
- * 将 application.yml 中的 transview.* 配置同步到 core 的静态属性。
+ * 属性赋值在 @PostConstruct 同步完成（轻量）；
+ * 缓存索引重建和字体目录扫描在后台线程执行（重 IO），不阻塞启动。
  */
 @AutoConfiguration
 @ConditionalOnClass(name = "jakarta.servlet.http.HttpServlet")
@@ -59,14 +60,14 @@ public class TransViewAutoConfiguration {
                 properties.getExecutor().getQueueCapacity()
         );
 
-        // CAD Executor（写入静态属性，由 CadHandler 内部的 CadConversionExecutor 读取）
+        // CAD Executor
         com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setCorePoolSize(properties.getCadExecutor().getCorePoolSize());
         com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setMaxPoolSize(properties.getCadExecutor().getMaxPoolSize());
         com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setQueueCapacity(properties.getCadExecutor().getQueueCapacity());
         com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setMinFreeMemoryMB(properties.getCadExecutor().getMinFreeMemoryMB());
         com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setTaskTimeoutMs(properties.getCadExecutor().getTaskTimeoutMs());
 
-        // Cache
+        // Cache 配置（仅赋值，不初始化）
         com.wiblog.transview.core.bean.TransViewProperties.Cache.setEnabled(properties.getCache().isEnabled());
         if (properties.getCache().getRootDir() != null) {
             com.wiblog.transview.core.bean.TransViewProperties.Cache.setRootDir(properties.getCache().getRootDir());
@@ -75,12 +76,26 @@ public class TransViewAutoConfiguration {
         com.wiblog.transview.core.bean.TransViewProperties.Cache.setMaxEntryAge(properties.getCache().getMaxEntryAge());
         com.wiblog.transview.core.bean.TransViewProperties.Cache.setCleanupInterval(properties.getCache().getCleanupInterval());
         com.wiblog.transview.core.bean.TransViewProperties.Cache.setMinFreeSpace(properties.getCache().getMinFreeSpace());
-        com.wiblog.transview.core.cache.DiskCacheManager.getInstance().init();
 
-        // Font Index
-        com.wiblog.transview.core.cache.FontIndex.getInstance().init(
-                properties.getView().getCad().getShxFontsFolder(),
-                properties.getView().getFontsFolder()
-        );
+        // 重 IO 操作放后台线程，不阻塞启动
+        startAsyncInit();
+    }
+
+    private void startAsyncInit() {
+        Thread initThread = new Thread(() -> {
+            try {
+                com.wiblog.transview.core.cache.DiskCacheManager.getInstance().init();
+            } catch (Exception ignored) {
+            }
+            try {
+                com.wiblog.transview.core.cache.FontIndex.getInstance().init(
+                        properties.getView().getCad().getShxFontsFolder(),
+                        properties.getView().getFontsFolder()
+                );
+            } catch (Exception ignored) {
+            }
+        }, "transview-init");
+        initThread.setDaemon(true);
+        initThread.start();
     }
 }
