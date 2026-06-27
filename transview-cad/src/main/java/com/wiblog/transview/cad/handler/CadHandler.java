@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * CAD 预览处理器。
@@ -34,11 +35,24 @@ import java.util.concurrent.*;
  * 3. 无缓存 — 快速生成缩略图并返回，后台异步生成完整结果
  * <p>
  * 完整结果直接写磁盘缓存文件，不经过堆内存。
- * 首次访问后，后台自动预生成 extraLayouts 中其他布局的缓存。
+ * 注意：removeWatermark=true 时，PDF/SVG 会先写入 ByteArrayOutputStream 再处理水印，
+ * 此路径会占用较多堆内存。大 DWG 建议 removeWatermark=false。
+ * <p>
+ * 防护机制：
+ * - 同 cacheKey 在飞行中时不会重复提交后台任务（in-flight 去重）
+ * - 转换失败的 cacheKey 有 5 分钟冷却期，避免坏文件反复打爆 Aspose
+ * - 所有异步任务有 watchdog 超时监控
  */
 public class CadHandler extends TransViewHandler {
 
     private static volatile CadConversionExecutor conversionExecutor;
+
+    /** 正在执行的异步转换任务（cacheKey -> Future），防止同 key 重复提交 */
+    private static final ConcurrentHashMap<String, Future<?>> RUNNING_TASKS = new ConcurrentHashMap<>();
+
+    /** 失败任务冷却记录（cacheKey -> 失败时间戳），5 分钟内不再重试 */
+    private static final ConcurrentHashMap<String, Long> FAILED_TASKS = new ConcurrentHashMap<>();
+    private static final long COOLDOWN_MS = 5 * 60 * 1000;
 
     private static CadConversionExecutor getConversionExecutor() {
         if (conversionExecutor == null) {
@@ -122,19 +136,77 @@ public class CadHandler extends TransViewHandler {
         }
     }
 
+    @Override
+    public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum,
+                               InputStream inputStream, OutputStream outputStream) throws Exception {
+        if (sourceExtensionEnum == null) {
+            throw new IllegalArgumentException("源格式不能为空");
+        }
+        StrategyTypeEnum sourceType = StrategyTypeEnum.getStrategy(sourceExtensionEnum.getValue());
+        if (sourceType == null || !strategyTypeEnums().contains(sourceType)) {
+            throw new IllegalArgumentException("不支持的 CAD 源格式: " + sourceExtensionEnum);
+        }
+
+        CadImage cadImage = null;
+        try {
+            cadImage = (CadImage) Image.load(inputStream);
+            CadRasterizationOptions rasterOptions = buildRasterOptions(TransViewProperties.View.Cad.getLayout());
+
+            if (targetExtensionEnum == ExtensionEnum.PDF) {
+                convertToPdf(outputStream, rasterOptions, cadImage);
+            } else if (targetExtensionEnum == ExtensionEnum.SVG) {
+                convertToSvg(outputStream, rasterOptions, cadImage);
+            } else {
+                throw new IllegalArgumentException("CAD 仅支持转换为 PDF 或 SVG: " + targetExtensionEnum);
+            }
+        } finally {
+            if (cadImage != null) {
+                cadImage.close();
+            }
+        }
+    }
+
+    @Override
+    public List<StrategyTypeEnum> strategyTypeEnums() {
+        return StrategyTypeEnum.CAD_TYPES;
+    }
+
     // ---- 内部方法 ----
 
+    /**
+     * 异步生成完整结果（in-flight 去重 + 失败冷却）
+     */
     private void kickOffAsync(File file, String cacheKey, String layout, DiskCacheManager cache) {
+        // 失败冷却：5 分钟内同 key 不重试
+        Long failedAt = FAILED_TASKS.get(cacheKey);
+        if (failedAt != null && System.currentTimeMillis() - failedAt < COOLDOWN_MS) {
+            return;
+        }
+
+        // in-flight 去重：同 key 已在转换时不再提交
+        if (RUNNING_TASKS.containsKey(cacheKey)) {
+            return;
+        }
+
         Path tmpPath = null;
         try {
             tmpPath = cache.prepareDirect(cacheKey);
             Path finalTmpPath = tmpPath;
-            getConversionExecutor().submitAsync(() -> {
-                convertToFile(file, finalTmpPath, layout);
-                String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
-                cache.commitDirect(cacheKey, file, finalTmpPath, ext);
+            Future<?> future = getConversionExecutor().submitAsync(() -> {
+                try {
+                    convertToFile(file, finalTmpPath, layout);
+                    String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
+                    cache.commitDirect(cacheKey, file, finalTmpPath, ext);
+                    FAILED_TASKS.remove(cacheKey);
+                } catch (Exception e) {
+                    FAILED_TASKS.put(cacheKey, System.currentTimeMillis());
+                    throw e;
+                } finally {
+                    RUNNING_TASKS.remove(cacheKey);
+                }
                 return null;
             }, tmpPath, cacheKey);
+            RUNNING_TASKS.put(cacheKey, future);
         } catch (RejectedExecutionException e) {
             deleteQuietly(tmpPath);
         }
@@ -147,46 +219,70 @@ public class CadHandler extends TransViewHandler {
         }
         for (String layout : extraLayouts) {
             String key = CacheKeyUtil.generateCadCacheKey(file, layout);
-            if (cache.get(key) != null) {
+            if (cache.get(key) != null || RUNNING_TASKS.containsKey(key)) {
+                continue;
+            }
+            Long failedAt = FAILED_TASKS.get(key);
+            if (failedAt != null && System.currentTimeMillis() - failedAt < COOLDOWN_MS) {
                 continue;
             }
             Path tmpPath = null;
             try {
                 tmpPath = cache.prepareDirect(key);
                 Path finalTmpPath = tmpPath;
-                getConversionExecutor().submitAsync(() -> {
-                    convertToFile(file, finalTmpPath, layout);
-                    String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
-                    cache.commitDirect(key, file, finalTmpPath, ext);
-                    byte[] thumb = generateThumbnail(file, layout);
-                    if (thumb != null) {
-                        cache.putThumbnail(key, thumb);
+                Future<?> future = getConversionExecutor().submitAsync(() -> {
+                    try {
+                        convertToFile(file, finalTmpPath, layout);
+                        String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
+                        cache.commitDirect(key, file, finalTmpPath, ext);
+                        byte[] thumb = generateThumbnail(file, layout);
+                        if (thumb != null) {
+                            cache.putThumbnail(key, thumb);
+                        }
+                        FAILED_TASKS.remove(key);
+                    } catch (Exception e) {
+                        FAILED_TASKS.put(key, System.currentTimeMillis());
+                        throw e;
+                    } finally {
+                        RUNNING_TASKS.remove(key);
                     }
                     return null;
                 }, tmpPath, key);
+                RUNNING_TASKS.put(key, future);
             } catch (RejectedExecutionException e) {
                 deleteQuietly(tmpPath);
             }
         }
     }
 
-    private static void deleteQuietly(Path path) {
-        if (path != null) {
-            try { Files.deleteIfExists(path); } catch (IOException ignored) {}
-        }
-    }
-
+    /**
+     * 同步降级路径（缩略图生成失败时）— 走受控执行器
+     */
     private void convertAndCacheSync(File file, String cacheKey, String layout,
                                      DiskCacheManager cache, OutputStream outputStream) {
         String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
         try {
             Path tmpPath = cache.prepareDirect(cacheKey);
-            convertToFile(file, tmpPath, layout);
+            try {
+                getConversionExecutor().submitAndWait(() -> {
+                    convertToFile(file, tmpPath, layout);
+                    return null;
+                }, tmpPath);
+            } catch (TimeoutException e) {
+                deleteQuietly(tmpPath);
+                throw new RuntimeException("CAD 转换超时", e);
+            } catch (ExecutionException e) {
+                deleteQuietly(tmpPath);
+                Throwable cause = e.getCause();
+                throw new RuntimeException("预览 CAD 文件失败", cause instanceof Exception ? (Exception) cause : e);
+            }
             cache.commitDirect(cacheKey, file, tmpPath, ext);
             File cached = cache.get(cacheKey);
             if (cached != null) {
                 streamFile(cached, outputStream);
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("预览 CAD 文件失败", e);
         }
@@ -267,13 +363,10 @@ public class CadHandler extends TransViewHandler {
         }
     }
 
-    @Override
-    public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
-    }
-
-    @Override
-    public List<StrategyTypeEnum> strategyTypeEnums() {
-        return StrategyTypeEnum.CAD_TYPES;
+    private static void deleteQuietly(Path path) {
+        if (path != null) {
+            try { Files.deleteIfExists(path); } catch (IOException ignored) {}
+        }
     }
 
     public static void convertToPdf(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws Exception {

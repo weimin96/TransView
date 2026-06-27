@@ -55,7 +55,7 @@ public class CadConversionExecutor {
      * @param cacheKey   缓存 Key（用于失败日志）
      * @throws RejectedExecutionException 内存不足或队列满
      */
-    public void submitAsync(Callable<Void> task, Path tmpPath, String cacheKey) {
+    public Future<?> submitAsync(Callable<Void> task, Path tmpPath, String cacheKey) {
         checkMemory();
         Future<?> future = executor.submit(() -> {
             activeTasks.incrementAndGet();
@@ -74,6 +74,7 @@ public class CadConversionExecutor {
                 deleteQuietly(tmpPath);
             }
         }, taskTimeoutMs, TimeUnit.MILLISECONDS);
+        return future;
     }
 
     /**
