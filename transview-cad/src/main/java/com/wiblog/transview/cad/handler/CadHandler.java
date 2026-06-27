@@ -125,22 +125,21 @@ public class CadHandler extends TransViewHandler {
     // ---- 内部方法 ----
 
     private void kickOffAsync(File file, String cacheKey, String layout, DiskCacheManager cache) {
+        Path tmpPath = null;
         try {
-            Path tmpPath = cache.prepareDirect(cacheKey);
-            getConversionExecutor().submit(() -> {
-                convertToFile(file, tmpPath, layout);
+            tmpPath = cache.prepareDirect(cacheKey);
+            Path finalTmpPath = tmpPath;
+            getConversionExecutor().submitAsync(() -> {
+                convertToFile(file, finalTmpPath, layout);
                 String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
-                cache.commitDirect(cacheKey, file, tmpPath, ext);
+                cache.commitDirect(cacheKey, file, finalTmpPath, ext);
                 return null;
-            }, tmpPath);
-        } catch (RejectedExecutionException ignored) {
-            // 内存不足或队列满，跳过异步预生成
+            }, tmpPath, cacheKey);
+        } catch (RejectedExecutionException e) {
+            deleteQuietly(tmpPath);
         }
     }
 
-    /**
-     * 后台预生成 extraLayouts 中其他布局的缓存
-     */
     private void kickOffExtraLayoutsAsync(File file, DiskCacheManager cache) {
         String[] extraLayouts = TransViewProperties.View.Cad.getExtraLayouts();
         if (extraLayouts == null || extraLayouts.length == 0) {
@@ -151,20 +150,29 @@ public class CadHandler extends TransViewHandler {
             if (cache.get(key) != null) {
                 continue;
             }
+            Path tmpPath = null;
             try {
-                Path tmpPath = cache.prepareDirect(key);
-                getConversionExecutor().submit(() -> {
-                    convertToFile(file, tmpPath, layout);
+                tmpPath = cache.prepareDirect(key);
+                Path finalTmpPath = tmpPath;
+                getConversionExecutor().submitAsync(() -> {
+                    convertToFile(file, finalTmpPath, layout);
                     String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
-                    cache.commitDirect(key, file, tmpPath, ext);
+                    cache.commitDirect(key, file, finalTmpPath, ext);
                     byte[] thumb = generateThumbnail(file, layout);
                     if (thumb != null) {
                         cache.putThumbnail(key, thumb);
                     }
                     return null;
-                }, tmpPath);
-            } catch (RejectedExecutionException ignored) {
+                }, tmpPath, key);
+            } catch (RejectedExecutionException e) {
+                deleteQuietly(tmpPath);
             }
+        }
+    }
+
+    private static void deleteQuietly(Path path) {
+        if (path != null) {
+            try { Files.deleteIfExists(path); } catch (IOException ignored) {}
         }
     }
 

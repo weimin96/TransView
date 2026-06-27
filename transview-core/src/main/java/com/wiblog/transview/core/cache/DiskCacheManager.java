@@ -125,7 +125,7 @@ public class DiskCacheManager {
         Path entryDir = getEntryDir(cacheKey);
         try {
             Files.createDirectories(entryDir);
-            return entryDir.resolve("result.tmp");
+            return entryDir.resolve("result-" + UUID.randomUUID() + ".tmp");
         } catch (IOException e) {
             throw new RuntimeException("创建缓存临时文件失败", e);
         }
@@ -167,9 +167,16 @@ public class DiskCacheManager {
             Path thumbPath = entryDir.resolve("thumbnail.png");
             Files.write(thumbPath, thumbnailData);
             CacheEntry entry = index.get(cacheKey);
+            long now = System.currentTimeMillis();
             if (entry != null) {
                 entry.thumbnailPath = thumbPath;
                 writeMetadata(entry);
+            } else {
+                // 首次写入：创建仅有缩略图的 CacheEntry
+                CacheEntry newEntry = new CacheEntry(cacheKey, entryDir, null, thumbPath,
+                        "", 0, thumbnailData.length, now, now);
+                writeMetadata(newEntry);
+                index.put(cacheKey, newEntry);
             }
         } catch (IOException ignored) {
         }
@@ -188,9 +195,16 @@ public class DiskCacheManager {
             Path thumbPath = entryDir.resolve("thumbnail.png");
             atomicMove(tmpThumbPath, thumbPath);
             CacheEntry entry = index.get(cacheKey);
+            long now = System.currentTimeMillis();
             if (entry != null) {
                 entry.thumbnailPath = thumbPath;
                 writeMetadata(entry);
+            } else {
+                long thumbSize = Files.size(thumbPath);
+                CacheEntry newEntry = new CacheEntry(cacheKey, entryDir, null, thumbPath,
+                        "", 0, thumbSize, now, now);
+                writeMetadata(newEntry);
+                index.put(cacheKey, newEntry);
             }
         } catch (IOException ignored) {
         }
@@ -260,6 +274,7 @@ public class DiskCacheManager {
             long maxDisk = TransViewProperties.Cache.getMaxDiskSize();
             long minFree = TransViewProperties.Cache.getMinFreeSpace();
 
+            // 删除过期条目
             Iterator<Map.Entry<String, CacheEntry>> it = index.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<String, CacheEntry> e = it.next();
@@ -269,6 +284,10 @@ public class DiskCacheManager {
                 }
             }
 
+            // 清理残留的 *.tmp 文件（异步任务超时/失败遗留）
+            cleanupTempFiles();
+
+            // 磁盘超额时按 lastAccessed 删除最旧的
             long currentSize = calculateDirSize(rootPath);
             if (currentSize > maxDisk || getFreeSpace() < minFree) {
                 List<CacheEntry> sorted = new ArrayList<>(index.values());
@@ -285,6 +304,30 @@ public class DiskCacheManager {
             }
         } finally {
             cleanupRunning.set(false);
+        }
+    }
+
+    /**
+     * 清理缓存目录下所有残留的 *.tmp 文件
+     */
+    private void cleanupTempFiles() {
+        if (rootPath == null || !Files.exists(rootPath)) {
+            return;
+        }
+        try {
+            Files.walk(rootPath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".tmp"))
+                    .forEach(p -> {
+                        try {
+                            // 只删除超过 5 分钟的 tmp 文件，避免删除正在写入的
+                            if (System.currentTimeMillis() - Files.getLastModifiedTime(p).toMillis() > 300000) {
+                                Files.delete(p);
+                            }
+                        } catch (IOException ignored) {
+                        }
+                    });
+        } catch (IOException ignored) {
         }
     }
 

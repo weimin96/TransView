@@ -59,12 +59,12 @@ public class TransViewAutoConfiguration {
                 properties.getExecutor().getQueueCapacity()
         );
 
-        // CAD Executor
-        TransViewHandler.initCadExecutor(
-                properties.getCadExecutor().getCorePoolSize(),
-                properties.getCadExecutor().getMaxPoolSize(),
-                properties.getCadExecutor().getQueueCapacity()
-        );
+        // CAD Executor（写入静态属性，由 CadHandler 内部的 CadConversionExecutor 读取）
+        com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setCorePoolSize(properties.getCadExecutor().getCorePoolSize());
+        com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setMaxPoolSize(properties.getCadExecutor().getMaxPoolSize());
+        com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setQueueCapacity(properties.getCadExecutor().getQueueCapacity());
+        com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setMinFreeMemoryMB(properties.getCadExecutor().getMinFreeMemoryMB());
+        com.wiblog.transview.core.bean.TransViewProperties.CadExecutor.setTaskTimeoutMs(properties.getCadExecutor().getTaskTimeoutMs());
 
         // Cache
         com.wiblog.transview.core.bean.TransViewProperties.Cache.setEnabled(properties.getCache().isEnabled());

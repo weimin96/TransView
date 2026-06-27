@@ -13,8 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
 
-import com.wiblog.transview.core.cache.DiskCacheManager;
-
 /**
  * describe: 预览处理抽象类
  *
@@ -243,42 +241,6 @@ public abstract class TransViewHandler {
     public static boolean isPlainType(String extension) {
         StrategyTypeEnum strategy = StrategyTypeEnum.getStrategy(extension);
         return strategy != null && StrategyTypeEnum.PLAIN_TYPES.contains(strategy);
-    }
-
-    /**
-     * 获取缓存文件（用于在适配层直接服务缓存结果）
-     */
-    public static File getCachedFile(String cacheKey) {
-        return DiskCacheManager.getInstance().get(cacheKey);
-    }
-
-    /**
-     * 获取 CAD 专用线程池（独立于通用线程池）
-     */
-    public static ExecutorService getCadExecutor() {
-        return PREVIEW_CAD_EXECUTOR != null ? PREVIEW_CAD_EXECUTOR : CadExecutorHolder.DEFAULT;
-    }
-
-    private static volatile ExecutorService PREVIEW_CAD_EXECUTOR;
-
-    private static final class CadExecutorHolder {
-        static final ExecutorService DEFAULT = createExecutor(
-                TransViewProperties.CadExecutor.getCorePoolSize(),
-                TransViewProperties.CadExecutor.getMaxPoolSize(),
-                TransViewProperties.CadExecutor.getQueueCapacity()
-        );
-    }
-
-    /**
-     * 自定义 CAD 线程池，覆盖默认配置
-     */
-    public static void initCadExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {
-        validateExecutorConfig(corePoolSize, maxPoolSize, queueCapacity);
-        ExecutorService oldExecutor = PREVIEW_CAD_EXECUTOR;
-        PREVIEW_CAD_EXECUTOR = createExecutor(corePoolSize, maxPoolSize, queueCapacity);
-        if (oldExecutor != null) {
-            oldExecutor.shutdown();
-        }
     }
 
 }
