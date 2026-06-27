@@ -53,9 +53,10 @@ public class CadConversionExecutor {
      * @param task       转换任务
      * @param tmpPath    临时文件路径（超时/失败时自动删除）
      * @param cacheKey   缓存 Key（用于失败日志）
+     * @param onDone     任务结束回调（正常完成/失败/超时 cancel 均会调用）
      * @throws RejectedExecutionException 内存不足或队列满
      */
-    public Future<?> submitAsync(Callable<Void> task, Path tmpPath, String cacheKey) {
+    public Future<?> submitAsync(Callable<Void> task, Path tmpPath, String cacheKey, Runnable onDone) {
         checkMemory();
         Future<?> future = executor.submit(() -> {
             activeTasks.incrementAndGet();
@@ -65,13 +66,15 @@ public class CadConversionExecutor {
                 throw new RuntimeException(e);
             } finally {
                 activeTasks.decrementAndGet();
+                onDone.run();
             }
         });
-        // 超时监控：超时后 cancel + 清理临时文件
+        // 超时监控：超时后 cancel + 清理临时文件 + 回调
         watchdog.schedule(() -> {
             if (!future.isDone()) {
                 future.cancel(true);
                 deleteQuietly(tmpPath);
+                onDone.run();
             }
         }, taskTimeoutMs, TimeUnit.MILLISECONDS);
         return future;

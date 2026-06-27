@@ -174,17 +174,16 @@ public class CadHandler extends TransViewHandler {
     // ---- 内部方法 ----
 
     /**
-     * 异步生成完整结果（in-flight 去重 + 失败冷却）
+     * 异步生成完整结果（先占位再提交，确保 in-flight 原子去重）
      */
     private void kickOffAsync(File file, String cacheKey, String layout, DiskCacheManager cache) {
-        // 失败冷却：5 分钟内同 key 不重试
-        Long failedAt = FAILED_TASKS.get(cacheKey);
-        if (failedAt != null && System.currentTimeMillis() - failedAt < COOLDOWN_MS) {
+        if (isCooledDown(cacheKey) || RUNNING_TASKS.containsKey(cacheKey)) {
             return;
         }
 
-        // in-flight 去重：同 key 已在转换时不再提交
-        if (RUNNING_TASKS.containsKey(cacheKey)) {
+        // 先用 CompletableFuture 占位，保证原子性
+        CompletableFuture<Void> placeholder = new CompletableFuture<>();
+        if (RUNNING_TASKS.putIfAbsent(cacheKey, placeholder) != null) {
             return;
         }
 
@@ -192,7 +191,8 @@ public class CadHandler extends TransViewHandler {
         try {
             tmpPath = cache.prepareDirect(cacheKey);
             Path finalTmpPath = tmpPath;
-            Future<?> future = getConversionExecutor().submitAsync(() -> {
+            Runnable onDone = () -> RUNNING_TASKS.remove(cacheKey);
+            Future<?> realFuture = getConversionExecutor().submitAsync(() -> {
                 try {
                     convertToFile(file, finalTmpPath, layout);
                     String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
@@ -202,19 +202,17 @@ public class CadHandler extends TransViewHandler {
                     FAILED_TASKS.put(cacheKey, System.currentTimeMillis());
                     deleteQuietly(finalTmpPath);
                     throw e;
-                } finally {
-                    RUNNING_TASKS.remove(cacheKey);
                 }
                 return null;
-            }, tmpPath, cacheKey);
-            Future<?> existing = RUNNING_TASKS.putIfAbsent(cacheKey, future);
-            if (existing != null) {
-                // 已有同 key 任务在跑，取消当前重复任务
-                future.cancel(true);
-                deleteQuietly(tmpPath);
-            }
+            }, tmpPath, cacheKey, onDone);
+            RUNNING_TASKS.replace(cacheKey, placeholder, realFuture);
         } catch (RejectedExecutionException e) {
+            RUNNING_TASKS.remove(cacheKey, placeholder);
             deleteQuietly(tmpPath);
+        } catch (RuntimeException e) {
+            RUNNING_TASKS.remove(cacheKey, placeholder);
+            deleteQuietly(tmpPath);
+            throw e;
         }
     }
 
@@ -225,18 +223,21 @@ public class CadHandler extends TransViewHandler {
         }
         for (String layout : extraLayouts) {
             String key = CacheKeyUtil.generateCadCacheKey(file, layout);
-            if (cache.get(key) != null || RUNNING_TASKS.containsKey(key)) {
+            if (cache.get(key) != null || RUNNING_TASKS.containsKey(key) || isCooledDown(key)) {
                 continue;
             }
-            Long failedAt = FAILED_TASKS.get(key);
-            if (failedAt != null && System.currentTimeMillis() - failedAt < COOLDOWN_MS) {
+
+            CompletableFuture<Void> placeholder = new CompletableFuture<>();
+            if (RUNNING_TASKS.putIfAbsent(key, placeholder) != null) {
                 continue;
             }
+
             Path tmpPath = null;
             try {
                 tmpPath = cache.prepareDirect(key);
                 Path finalTmpPath = tmpPath;
-                Future<?> future = getConversionExecutor().submitAsync(() -> {
+                Runnable onDone = () -> RUNNING_TASKS.remove(key);
+                Future<?> realFuture = getConversionExecutor().submitAsync(() -> {
                     try {
                         convertToFile(file, finalTmpPath, layout);
                         String ext = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
@@ -250,20 +251,33 @@ public class CadHandler extends TransViewHandler {
                         FAILED_TASKS.put(key, System.currentTimeMillis());
                         deleteQuietly(finalTmpPath);
                         throw e;
-                    } finally {
-                        RUNNING_TASKS.remove(key);
                     }
                     return null;
-                }, tmpPath, key);
-                Future<?> existing = RUNNING_TASKS.putIfAbsent(key, future);
-                if (existing != null) {
-                    future.cancel(true);
-                    deleteQuietly(tmpPath);
-                }
+                }, tmpPath, key, onDone);
+                RUNNING_TASKS.replace(key, placeholder, realFuture);
             } catch (RejectedExecutionException e) {
+                RUNNING_TASKS.remove(key, placeholder);
+                deleteQuietly(tmpPath);
+            } catch (RuntimeException e) {
+                RUNNING_TASKS.remove(key, placeholder);
                 deleteQuietly(tmpPath);
             }
         }
+    }
+
+    /**
+     * 检查失败冷却（顺便清理过期记录）
+     */
+    private static boolean isCooledDown(String cacheKey) {
+        Long failedAt = FAILED_TASKS.get(cacheKey);
+        if (failedAt == null) {
+            return false;
+        }
+        if (System.currentTimeMillis() - failedAt < COOLDOWN_MS) {
+            return true;
+        }
+        FAILED_TASKS.remove(cacheKey);
+        return false;
     }
 
     /**
