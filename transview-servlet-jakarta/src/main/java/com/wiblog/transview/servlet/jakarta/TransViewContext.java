@@ -150,9 +150,12 @@ public class TransViewContext {
 
     private static void previewCad(File file, String extension, HttpServletRequest request, HttpServletResponse response) {
         response.setCharacterEncoding("UTF-8");
-        response.setContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
+            String contentType = com.wiblog.transview.core.handler.TransViewHandler.consumeContentType();
+            if (contentType != null) {
+                response.setContentType(contentType);
+            }
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {

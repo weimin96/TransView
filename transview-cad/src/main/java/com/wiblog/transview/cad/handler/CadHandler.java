@@ -103,6 +103,7 @@ public class CadHandler extends TransViewHandler {
         String cacheKey = CacheKeyUtil.generateCadCacheKey(file, layout);
         DiskCacheManager cache = DiskCacheManager.getInstance();
         if (!cache.isReady()) {
+            setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
             previewViaCadExecutor(file, layout, outputStream);
             return;
         }
@@ -110,6 +111,7 @@ public class CadHandler extends TransViewHandler {
         // 1. 命中完整结果
         File cached = cache.get(cacheKey);
         if (cached != null && cached.getName().startsWith("result.")) {
+            setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
             kickOffExtraLayoutsAsync(file, cache);
             streamFile(cached, outputStream);
             return;
@@ -118,6 +120,7 @@ public class CadHandler extends TransViewHandler {
         // 2. 命中缩略图 — 返回缩略图，后台生成完整结果
         File thumb = cache.getThumbnail(cacheKey);
         if (thumb != null) {
+            setOutputContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
             kickOffAsync(file, cacheKey, layout, cache);
             kickOffExtraLayoutsAsync(file, cache);
             streamFile(thumb, outputStream);
@@ -128,6 +131,7 @@ public class CadHandler extends TransViewHandler {
         // 缩略图和完整转换各自独立加载 CadImage（Aspose CadImage 非线程安全，不能跨线程共享）
         byte[] thumbnailData = generateThumbnail(file, layout);
         if (thumbnailData != null) {
+            setOutputContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
             cache.putThumbnail(cacheKey, thumbnailData);
             kickOffAsync(file, cacheKey, layout, cache);
             kickOffExtraLayoutsAsync(file, cache);
@@ -137,6 +141,7 @@ public class CadHandler extends TransViewHandler {
                 throw new RuntimeException(e);
             }
         } else {
+            setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
             convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
         }
     }
@@ -175,38 +180,34 @@ public class CadHandler extends TransViewHandler {
     public void preview(InputStream inputStream, String filenameOrExtension, OutputStream outputStream) {
         check(filenameOrExtension);
         String extension = Util.getExtensionOrFilename(filenameOrExtension);
+        Path tmp = null;
         try {
-            if (TransViewProperties.View.getTimeout() != null) {
-                Path tmp = Files.createTempFile("transview-cad-stream-", "." + extension);
-                try {
-                    Path finalTmp = tmp;
-                    getConversionExecutor().submitAndWait(() -> {
-                        try (OutputStream out = Files.newOutputStream(finalTmp)) {
-                            viewHandler(inputStream, out, extension);
-                        }
-                        return null;
-                    }, finalTmp);
-                    streamFile(finalTmp.toFile(), outputStream);
-                } catch (TimeoutException e) {
-                    throw new PreviewTimeoutException("CAD 转换超时");
-                } catch (ExecutionException e) {
-                    Throwable cause = e.getCause();
-                    if (cause instanceof RuntimeException) {
-                        throw (RuntimeException) cause;
-                    }
-                    throw new RuntimeException("预览 CAD 文件失败", cause);
-                } finally {
-                    deleteQuietly(tmp);
+            tmp = Files.createTempFile("transview-cad-stream-", "." + extension);
+            Path finalTmp = tmp;
+            getConversionExecutor().submitAndWait(() -> {
+                try (OutputStream out = Files.newOutputStream(finalTmp)) {
+                    viewHandler(inputStream, out, extension);
                 }
-            } else {
-                viewHandler(inputStream, outputStream, extension);
-            }
+                return null;
+            }, finalTmp);
+            streamFile(finalTmp.toFile(), outputStream);
         } catch (RejectedExecutionException e) {
             throw new PreviewBusyException("CAD 转换服务繁忙");
+        } catch (TimeoutException e) {
+            throw new PreviewTimeoutException("CAD 转换超时");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException("预览 CAD 文件失败", cause);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("CAD 转换被中断", e);
         } catch (IOException e) {
             throw new RuntimeException("预览 CAD 文件失败", e);
-        } catch (Exception e) {
-            throw new RuntimeException("预览 CAD 文件失败", e);
+        } finally {
+            deleteQuietly(tmp);
         }
     }
 

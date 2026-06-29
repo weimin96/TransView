@@ -21,6 +21,20 @@ import java.util.concurrent.*;
  */
 public abstract class TransViewHandler {
 
+    private static final ThreadLocal<String> OUTPUT_CONTENT_TYPE = new ThreadLocal<>();
+
+    /** 供子类设置当前请求实际输出的 Content-Type */
+    protected static void setOutputContentType(String contentType) {
+        OUTPUT_CONTENT_TYPE.set(contentType);
+    }
+
+    /** 供 servlet 适配层在 handler 写入完成后获取实际 Content-Type */
+    public static String consumeContentType() {
+        String type = OUTPUT_CONTENT_TYPE.get();
+        OUTPUT_CONTENT_TYPE.remove();
+        return type;
+    }
+
     private static volatile ExecutorService PREVIEW_EXECUTOR;
 
     private static final class ExecutorHolder {
