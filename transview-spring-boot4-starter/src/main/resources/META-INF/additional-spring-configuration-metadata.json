@@ -1,0 +1,186 @@
+{
+  "properties": [
+    {
+      "name": "transview.cache.cleanup-interval",
+      "type": "java.lang.Long",
+      "description": "缓存清理间隔（毫秒）",
+      "defaultValue": "600000"
+    },
+    {
+      "name": "transview.cache.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用磁盘缓存",
+      "defaultValue": "false"
+    },
+    {
+      "name": "transview.cache.max-disk-size",
+      "type": "java.lang.Long",
+      "description": "缓存最大磁盘占用（字节）",
+      "defaultValue": "21474836480"
+    },
+    {
+      "name": "transview.cache.max-entry-age",
+      "type": "java.lang.Long",
+      "description": "缓存条目最大存活时间（毫秒）",
+      "defaultValue": "604800000"
+    },
+    {
+      "name": "transview.cache.min-free-space",
+      "type": "java.lang.Long",
+      "description": "磁盘最低剩余空间（字节），低于此值触发缓存驱逐",
+      "defaultValue": "5368709120"
+    },
+    {
+      "name": "transview.cache.root-dir",
+      "type": "java.lang.String",
+      "description": "缓存根目录路径"
+    },
+    {
+      "name": "transview.cad-executor.core-pool-size",
+      "type": "java.lang.Integer",
+      "description": "CAD 转换线程池核心线程数",
+      "defaultValue": "1"
+    },
+    {
+      "name": "transview.cad-executor.max-pool-size",
+      "type": "java.lang.Integer",
+      "description": "CAD 转换线程池最大线程数",
+      "defaultValue": "2"
+    },
+    {
+      "name": "transview.cad-executor.min-free-memory-m-b",
+      "type": "java.lang.Integer",
+      "description": "CAD 转换最低可用内存（MB），低于此值拒绝新任务",
+      "defaultValue": "256"
+    },
+    {
+      "name": "transview.cad-executor.queue-capacity",
+      "type": "java.lang.Integer",
+      "description": "CAD 转换线程池队列容量",
+      "defaultValue": "20"
+    },
+    {
+      "name": "transview.cad-executor.task-timeout-ms",
+      "type": "java.lang.Long",
+      "description": "单个 CAD 转换任务超时时间（毫秒）",
+      "defaultValue": "120000"
+    },
+    {
+      "name": "transview.executor.core-pool-size",
+      "type": "java.lang.Integer",
+      "description": "通用预览线程池核心线程数（0 表示按 CPU 核数自动设置）"
+    },
+    {
+      "name": "transview.executor.max-pool-size",
+      "type": "java.lang.Integer",
+      "description": "通用预览线程池最大线程数（0 表示按 CPU 核数自动设置）"
+    },
+    {
+      "name": "transview.executor.queue-capacity",
+      "type": "java.lang.Integer",
+      "description": "通用预览线程池队列容量",
+      "defaultValue": "200"
+    },
+    {
+      "name": "transview.view.cad.convert-type",
+      "type": "com.wiblog.transview.core.common.CadConvertType",
+      "description": "CAD 转换目标格式",
+      "defaultValue": "svg"
+    },
+    {
+      "name": "transview.view.cad.extra-layouts",
+      "type": "java.lang.String[]",
+      "description": "除默认布局外，额外预生成缓存的 CAD 布局列表"
+    },
+    {
+      "name": "transview.view.cad.layout",
+      "type": "java.lang.String",
+      "description": "CAD 默认布局名称",
+      "defaultValue": "Model"
+    },
+    {
+      "name": "transview.view.cad.page-height",
+      "type": "java.lang.Integer",
+      "description": "CAD 渲染页面高度（像素）",
+      "defaultValue": "1228"
+    },
+    {
+      "name": "transview.view.cad.page-width",
+      "type": "java.lang.Integer",
+      "description": "CAD 渲染页面宽度（像素）",
+      "defaultValue": "2549"
+    },
+    {
+      "name": "transview.view.cad.shx-fonts-folder",
+      "type": "java.lang.String[]",
+      "description": "CAD SHX 字体目录路径"
+    },
+    {
+      "name": "transview.view.excel.calculate-formula",
+      "type": "java.lang.Boolean",
+      "description": "Excel 预览前是否重新计算公式",
+      "defaultValue": "false"
+    },
+    {
+      "name": "transview.view.excel.max-columns",
+      "type": "java.lang.Integer",
+      "description": "Excel 最大渲染列数（-1 不限制）",
+      "defaultValue": "-1"
+    },
+    {
+      "name": "transview.view.excel.max-rows",
+      "type": "java.lang.Integer",
+      "description": "Excel 最大渲染行数（-1 不限制）",
+      "defaultValue": "-1"
+    },
+    {
+      "name": "transview.view.excel.one-page-per-sheet",
+      "type": "java.lang.Boolean",
+      "description": "Excel 是否每张工作表渲染为一页",
+      "defaultValue": "true"
+    },
+    {
+      "name": "transview.view.excel.sheet-index",
+      "type": "java.lang.Integer",
+      "description": "Excel 预览的工作表索引（从 0 开始）",
+      "defaultValue": "0"
+    },
+    {
+      "name": "transview.view.fonts-folder",
+      "type": "java.lang.String",
+      "description": "字体目录，用于文本渲染"
+    },
+    {
+      "name": "transview.view.interrupted",
+      "type": "java.lang.Boolean",
+      "description": "请求取消时是否中断正在执行的操作",
+      "defaultValue": "false"
+    },
+    {
+      "name": "transview.view.remove-watermark",
+      "type": "java.lang.Boolean",
+      "description": "是否移除转换结果中的水印",
+      "defaultValue": "true"
+    },
+    {
+      "name": "transview.view.timeout",
+      "type": "java.time.Duration",
+      "description": "预览超时时间，例如 30s、1m"
+    }
+  ],
+  "hints": [
+    {
+      "name": "transview.view.cad.convert-type",
+      "values": [
+        {
+          "value": "svg",
+          "description": "转换为 SVG 矢量图"
+        },
+        {
+          "value": "pdf",
+          "description": "转换为 PDF 文档"
+        }
+      ]
+    }
+  ]
+}
