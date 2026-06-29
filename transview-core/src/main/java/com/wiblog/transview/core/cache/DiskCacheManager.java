@@ -35,6 +35,9 @@ public class DiskCacheManager {
         if (!TransViewProperties.Cache.isEnabled() || TransViewProperties.Cache.getRootDir() == null) {
             return;
         }
+        if (cleanupExecutor != null && !cleanupExecutor.isShutdown()) {
+            return;
+        }
         this.rootPath = Paths.get(TransViewProperties.Cache.getRootDir());
         try {
             Files.createDirectories(rootPath);

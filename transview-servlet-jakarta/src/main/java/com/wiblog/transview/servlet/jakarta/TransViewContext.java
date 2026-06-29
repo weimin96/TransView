@@ -40,11 +40,11 @@ public class TransViewContext {
             previewPlain(file, extension, request, response);
         } else if (isCachableType(extension)) {
             File cached = lookupCache(file);
-            if (cached != null) {
+            if (cached != null && cached.getName().startsWith("result.")) {
                 String cachedExt = Util.getExtension(cached.getName());
                 previewPlain(cached, Util.isBlank(cachedExt) ? extension : cachedExt, request, response);
             } else {
-                previewConverted(file, extension, response);
+                previewCad(file, extension, request, response);
             }
         } else {
             previewConverted(file, extension, response);
@@ -80,36 +80,39 @@ public class TransViewContext {
         response.setCharacterEncoding("UTF-8");
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         long lastModified = file.lastModified();
-        String etag = HttpRangeUtil.generateETag(file.length(), lastModified);
+        boolean isHtml = "html".equalsIgnoreCase(extension);
         response.setDateHeader("Last-Modified", lastModified);
         response.setHeader("Cache-Control", "public, max-age=3600");
-        response.setHeader("ETag", etag);
-        if (request != null) {
-            if (HttpRangeUtil.isNotModified(etag, request.getHeader("If-None-Match"), lastModified, request.getHeader("If-Modified-Since"))) {
-                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                return;
-            }
-            HttpRangeUtil.Range range = HttpRangeUtil.parseRange(request.getHeader("Range"), file.length());
-            if (range != null) {
-                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + file.length());
-                response.setHeader("Accept-Ranges", "bytes");
-                response.setContentLengthLong(range.contentLength());
-                try {
-                    HttpRangeUtil.writeRange(file, range.start, range.end, response.getOutputStream());
-                } catch (java.io.IOException e) {
-                    throw new RuntimeException(e);
+        if (!isHtml) {
+            String etag = HttpRangeUtil.generateETag(file.length(), lastModified);
+            response.setHeader("ETag", etag);
+            if (request != null) {
+                if (HttpRangeUtil.isNotModified(etag, request.getHeader("If-None-Match"), lastModified, request.getHeader("If-Modified-Since"))) {
+                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                    return;
                 }
-                return;
+                HttpRangeUtil.Range range = HttpRangeUtil.parseRange(request.getHeader("Range"), file.length());
+                if (range != null) {
+                    response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                    response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + file.length());
+                    response.setHeader("Accept-Ranges", "bytes");
+                    response.setContentLengthLong(range.contentLength());
+                    try {
+                        HttpRangeUtil.writeRange(file, range.start, range.end, response.getOutputStream());
+                    } catch (java.io.IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return;
+                }
+                if (request.getHeader("Range") != null) {
+                    response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                    response.setHeader("Content-Range", "bytes */" + file.length());
+                    return;
+                }
             }
-            if (request.getHeader("Range") != null) {
-                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                response.setHeader("Content-Range", "bytes */" + file.length());
-                return;
-            }
+            response.setHeader("Accept-Ranges", "bytes");
+            response.setContentLengthLong(file.length());
         }
-        response.setHeader("Accept-Ranges", "bytes");
-        response.setContentLengthLong(file.length());
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
         } catch (Exception e) {
@@ -136,6 +139,20 @@ public class TransViewContext {
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         try {
             com.wiblog.transview.core.context.TransViewContext.preview(inputStream, filename, response.getOutputStream());
+        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
+            writeBusy(response);
+        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
+            writeTimeout(response);
+        } catch (Exception e) {
+            throw new RuntimeException("预览 " + extension + " 文件失败", e);
+        }
+    }
+
+    private static void previewCad(File file, String extension, HttpServletRequest request, HttpServletResponse response) {
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
+        try {
+            com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {

@@ -16,8 +16,11 @@ import com.wiblog.transview.core.cache.DiskCacheManager;
 import com.wiblog.transview.core.common.CadConvertType;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
+import com.wiblog.transview.core.exception.PreviewBusyException;
+import com.wiblog.transview.core.exception.PreviewTimeoutException;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.SVGUtil;
+import com.wiblog.transview.core.utils.Util;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -96,14 +99,13 @@ public class CadHandler extends TransViewHandler {
 
     @Override
     public void preview(File file, OutputStream outputStream) {
-        DiskCacheManager cache = DiskCacheManager.getInstance();
-        if (!cache.isReady()) {
-            super.preview(file, outputStream);
-            return;
-        }
-
         String layout = TransViewProperties.View.Cad.getLayout();
         String cacheKey = CacheKeyUtil.generateCadCacheKey(file, layout);
+        DiskCacheManager cache = DiskCacheManager.getInstance();
+        if (!cache.isReady()) {
+            previewViaCadExecutor(file, layout, outputStream);
+            return;
+        }
 
         // 1. 命中完整结果
         File cached = cache.get(cacheKey);
@@ -137,6 +139,79 @@ public class CadHandler extends TransViewHandler {
         } else {
             convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
         }
+    }
+
+    /**
+     * 缓存不可用时的降级路径 — 仍然使用 CAD 独立执行器，避免占用通用预览线程
+     */
+    private void previewViaCadExecutor(File file, String layout, OutputStream outputStream) {
+        Path tmp = null;
+        try {
+            tmp = Files.createTempFile("transview-cad-", "." + getTargetExtension());
+            Path finalTmp = tmp;
+            getConversionExecutor().submitAndWait(() -> {
+                convertToFile(file, finalTmp, layout);
+                return null;
+            }, finalTmp);
+            streamFile(finalTmp.toFile(), outputStream);
+        } catch (RejectedExecutionException e) {
+            throw new PreviewBusyException("CAD 转换服务繁忙");
+        } catch (TimeoutException e) {
+            throw new PreviewTimeoutException("CAD 转换超时");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            throw new RuntimeException("预览 CAD 文件失败", cause instanceof Exception ? (Exception) cause : e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("CAD 转换被中断", e);
+        } catch (IOException e) {
+            throw new RuntimeException("创建 CAD 临时文件失败", e);
+        } finally {
+            deleteQuietly(tmp);
+        }
+    }
+
+    @Override
+    public void preview(InputStream inputStream, String filenameOrExtension, OutputStream outputStream) {
+        check(filenameOrExtension);
+        String extension = Util.getExtensionOrFilename(filenameOrExtension);
+        try {
+            if (TransViewProperties.View.getTimeout() != null) {
+                Path tmp = Files.createTempFile("transview-cad-stream-", "." + extension);
+                try {
+                    Path finalTmp = tmp;
+                    getConversionExecutor().submitAndWait(() -> {
+                        try (OutputStream out = Files.newOutputStream(finalTmp)) {
+                            viewHandler(inputStream, out, extension);
+                        }
+                        return null;
+                    }, finalTmp);
+                    streamFile(finalTmp.toFile(), outputStream);
+                } catch (TimeoutException e) {
+                    throw new PreviewTimeoutException("CAD 转换超时");
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    }
+                    throw new RuntimeException("预览 CAD 文件失败", cause);
+                } finally {
+                    deleteQuietly(tmp);
+                }
+            } else {
+                viewHandler(inputStream, outputStream, extension);
+            }
+        } catch (RejectedExecutionException e) {
+            throw new PreviewBusyException("CAD 转换服务繁忙");
+        } catch (IOException e) {
+            throw new RuntimeException("预览 CAD 文件失败", e);
+        } catch (Exception e) {
+            throw new RuntimeException("预览 CAD 文件失败", e);
+        }
+    }
+
+    private String getTargetExtension() {
+        return TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? "pdf" : "svg";
     }
 
     @Override

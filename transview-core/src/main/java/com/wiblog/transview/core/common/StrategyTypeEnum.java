@@ -15,8 +15,6 @@ public enum StrategyTypeEnum {
 
     DWG("dwg", null),
     DXF("dxf", null),
-    DOC("doc", Constant.MediaType.PDF_VALUE),
-    DOCX("docx", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
     XLS("xls", Constant.MediaType.IMAGE_SVG_VALUE),
     PDF("pdf", Constant.MediaType.PDF_VALUE),
@@ -43,9 +41,6 @@ public enum StrategyTypeEnum {
     final String mediaType;
 
     public static final List<StrategyTypeEnum> PLAIN_TYPES = Arrays.asList(JPG, JPEG, PNG, GIF, WEBP, BMP, SVG, PDF, TXT, LOG, JSON, CSV, XML, YAML, HTML, MP4, AVI);
-
-    // TODO: Word 暂不支持，无 WordHandler 实现
-    public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);
 
     public static final List<StrategyTypeEnum> EXCEL_TYPES = Arrays.asList(XLS, XLSX);
 

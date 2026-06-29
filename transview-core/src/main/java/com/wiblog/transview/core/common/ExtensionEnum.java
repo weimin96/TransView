@@ -16,9 +16,7 @@ public enum ExtensionEnum {
     JPEG("jpeg"),
     GIF("gif"),
     SVG("svg"),
-    PDF("pdf"),
-    DOC("doc"),
-    DOCX("docx");
+    PDF("pdf");
 
     final String value;
 
