@@ -40,10 +40,10 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ### 核心特性
 
-- **HTTP 缓存支持**：零转换格式和 CAD 缓存结果均支持 Range 请求、ETag、Last-Modified、Cache-Control、304 Not Modified
+- **HTTP 缓存支持**：纯输出格式（HTML 除外）和 CAD 缓存结果均支持 Range 请求、ETag、Last-Modified、Cache-Control、304 Not Modified。HTML 因需安全过滤，不支持 Range/ETag
 - **DWG 磁盘缓存**：CAD 转换结果落磁盘，相同文件+相同配置不会重复转换
 - **缩略图优先**：DWG 首次访问返回 800x600 缩略图（PNG），后台异步生成完整 SVG/PDF
-- **CAD 线程池隔离**：独立线程池 + 内存感知限流，大 DWG 不阻塞其他转换任务
+- **CAD 线程池隔离**：独立线程池 + 内存感知限流，覆盖全部 CAD 路径（File、InputStream、缓存开启/关闭），大 DWG 不阻塞其他转换任务
 - **多布局缓存**：支持预缓存多个 DWG 布局，切换布局时直接命中缓存
 - **HTML 安全过滤**：基于 Jsoup 白名单策略，自动移除 script、iframe、事件处理器等
 

@@ -40,10 +40,10 @@ Format conversion:
 
 ### Key Features
 
-- **HTTP caching**: Zero-conversion formats and CAD cache results support Range requests, ETag, Last-Modified, Cache-Control, 304 Not Modified
+- **HTTP caching**: Plain formats (except HTML) and CAD cache results support Range requests, ETag, Last-Modified, Cache-Control, 304 Not Modified. HTML excludes Range/ETag due to security filtering.
 - **DWG disk cache**: CAD conversion results stored on disk; same file + same config never re-converts
 - **Thumbnail first**: DWG first access returns 800x600 thumbnail (PNG), async generates full SVG/PDF in background
-- **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling, large DWGs don't block other tasks
+- **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling for all CAD paths (File, InputStream, cache-enabled/disabled), large DWGs don't block other tasks
 - **Multi-layout caching**: Pre-cache multiple DWG layouts, layout switching hits cache instantly
 - **HTML security filtering**: Jsoup whitelist strategy, automatically removes script, iframe, event handlers etc.
 
