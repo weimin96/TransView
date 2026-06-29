@@ -18,10 +18,4 @@
             <outputDirectory>/</outputDirectory>
         </dependencySet>
     </dependencySets>
-    <files>
-        <file>
-            <source>src/main/resources/META-INF/services</source>
-            <outputDirectory>META-INF/services</outputDirectory>
-        </file>
-    </files>
 </assembly>
