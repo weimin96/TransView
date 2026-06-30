@@ -9,6 +9,10 @@ import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.SVGUtil;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -47,7 +51,7 @@ public class ExcelHandler extends TransViewHandler {
      * @throws Exception 异常
      */
     public static void convertToSvgForResponse(InputStream inputStream, OutputStream outputStream) throws Exception {
-        Workbook workbook = new Workbook(inputStream);
+        Workbook workbook = loadWorkbook(inputStream);
         if (TransViewProperties.View.Excel.isCalculateFormula()) {
             workbook.calculateFormula();
         }
@@ -98,6 +102,79 @@ public class ExcelHandler extends TransViewHandler {
         } else {
             sr.toImage(0, outputStream);
         }
+    }
+
+    static Workbook loadWorkbook(InputStream inputStream) throws Exception {
+        byte[] inputBytes = toByteArray(inputStream);
+        String fontsFolder = TransViewProperties.View.getFontsFolder();
+        LoadOptions loadOptions = createLoadOptions(inputBytes);
+        if (fontsFolder == null || fontsFolder.trim().isEmpty()) {
+            return new Workbook(new ByteArrayInputStream(inputBytes), loadOptions);
+        }
+
+        File fontDir = new File(fontsFolder.trim());
+        if (!fontDir.isDirectory()) {
+            throw new IllegalArgumentException("字体目录不存在或不是目录: " + fontsFolder);
+        }
+
+        IndividualFontConfigs fontConfigs = new IndividualFontConfigs();
+        fontConfigs.setFontFolder(fontDir.getAbsolutePath(), true);
+        loadOptions.setFontConfigs(fontConfigs);
+        return new Workbook(new ByteArrayInputStream(inputBytes), loadOptions);
+    }
+
+    private static LoadOptions createLoadOptions(byte[] inputBytes) throws Exception {
+        FileFormatInfo formatInfo = FileFormatUtil.detectFileFormat(new ByteArrayInputStream(inputBytes));
+        if (formatInfo.getLoadFormat() != LoadFormat.UNKNOWN) {
+            return new LoadOptions();
+        }
+        if (!isDelimitedText(inputBytes)) {
+            return new LoadOptions();
+        }
+
+        TxtLoadOptions loadOptions = new TxtLoadOptions(LoadFormat.TSV);
+        loadOptions.setSeparator(containsByte(inputBytes, (byte) '\t') ? '\t' : ',');
+        loadOptions.setEncoding(Encoding.getEncoding(detectTextCharset(inputBytes)));
+        return loadOptions;
+    }
+
+    private static boolean isDelimitedText(byte[] inputBytes) {
+        if (inputBytes.length == 0 || containsByte(inputBytes, (byte) 0)) {
+            return false;
+        }
+        return (containsByte(inputBytes, (byte) '\t') || containsByte(inputBytes, (byte) ','))
+                && (containsByte(inputBytes, (byte) '\n') || containsByte(inputBytes, (byte) '\r'));
+    }
+
+    private static boolean containsByte(byte[] inputBytes, byte value) {
+        for (byte inputByte : inputBytes) {
+            if (inputByte == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Charset detectTextCharset(byte[] inputBytes) {
+        try {
+            StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(inputBytes));
+            return StandardCharsets.UTF_8;
+        } catch (CharacterCodingException e) {
+            return Charset.forName("GBK");
+        }
+    }
+
+    private static byte[] toByteArray(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int length;
+        while ((length = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, length);
+        }
+        return outputStream.toByteArray();
     }
 
     private static void handleEmptyExcel(OutputStream outputStream) throws IOException {
