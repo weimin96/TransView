@@ -35,6 +35,11 @@
             <groupId>io.github.weimin96</groupId>
             <artifactId>transview-servlet-jakarta</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.weimin96</groupId>
+            <artifactId>transview-spring-boot-starter</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
