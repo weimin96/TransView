@@ -193,7 +193,7 @@ transview:
     # CAD 配置
     cad:
       # 输出格式：SVG（默认，适合浏览器预览）或 PDF（适合打印/高保真）
-      convert-type: SVG
+      convert-type: svg
 
       # 渲染页面尺寸（像素）
       page-width: 2549

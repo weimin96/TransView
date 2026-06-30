@@ -193,7 +193,7 @@ transview:
     # CAD configuration
     cad:
       # Output format: SVG (default, best for browser preview) or PDF (for print/high-fidelity)
-      convert-type: SVG
+      convert-type: svg
 
       # Render page dimensions (pixels)
       page-width: 2549
