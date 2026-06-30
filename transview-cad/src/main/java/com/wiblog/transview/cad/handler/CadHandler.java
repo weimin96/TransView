@@ -58,6 +58,11 @@ public class CadHandler extends TransViewHandler {
     private static final ConcurrentHashMap<String, Long> FAILED_TASKS = new ConcurrentHashMap<>();
     private static final long COOLDOWN_MS = 5 * 60 * 1000;
 
+    /** InputStream 路径产生的源临时文件（sourceAbsPath -> Path），供 onDone 回调清理 */
+    private static final ConcurrentHashMap<String, Path> SOURCE_TEMP_FILES = new ConcurrentHashMap<>();
+    /** 源临时文件引用计数（sourceAbsPath -> 同时使用该源文件的异步任务数），归零时删除 */
+    private static final ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> SOURCE_TEMP_REFS = new ConcurrentHashMap<>();
+
     private static CadConversionExecutor getConversionExecutor() {
         if (conversionExecutor == null) {
             synchronized (CadHandler.class) {
@@ -180,6 +185,45 @@ public class CadHandler extends TransViewHandler {
     public void preview(InputStream inputStream, String filenameOrExtension, OutputStream outputStream) {
         check(filenameOrExtension);
         String extension = Util.getExtensionOrFilename(filenameOrExtension);
+        DiskCacheManager cache = DiskCacheManager.getInstance();
+
+        if (!cache.isReady()) {
+            previewStreamDirect(inputStream, extension, outputStream);
+            return;
+        }
+
+        // 落盘为临时文件 → 复用 preview(File) 的完整缓存逻辑
+        Path sourceTmp = null;
+        try {
+            sourceTmp = Files.createTempFile("transview-src-", "." + extension);
+            try (OutputStream out = Files.newOutputStream(sourceTmp)) {
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = inputStream.read(buf)) != -1) {
+                    out.write(buf, 0, n);
+                }
+            }
+
+            String layout = TransViewProperties.View.Cad.getLayout();
+            String cacheKey = CacheKeyUtil.generateCadCacheKey(sourceTmp.toFile(), layout);
+            registerSourceTemp(sourceTmp.toFile(), sourceTmp);
+
+            // 直接委托给 File 路径，所有缓存逻辑复用
+            this.preview(sourceTmp.toFile(), outputStream);
+
+            // 若未启动异步任务（缓存命中或同步降级），立即清理源临时文件；
+            // 若启动了异步任务，onDone 回调负责清理
+            if (!RUNNING_TASKS.containsKey(cacheKey)) {
+                releaseSourceTemp(sourceTmp.toFile());
+            }
+        } catch (IOException e) {
+            deleteQuietly(sourceTmp);
+            throw new RuntimeException("预览 CAD 文件失败", e);
+        }
+    }
+
+    /** InputStream 缓存不可用时的降级路径 */
+    private void previewStreamDirect(InputStream inputStream, String extension, OutputStream outputStream) {
         Path tmp = null;
         try {
             tmp = Files.createTempFile("transview-cad-stream-", "." + extension);
@@ -208,6 +252,24 @@ public class CadHandler extends TransViewHandler {
             throw new RuntimeException("预览 CAD 文件失败", e);
         } finally {
             deleteQuietly(tmp);
+        }
+    }
+
+    /** 注册 InputStream 源临时文件（引用计数 +1），供异步任务完成时清理 */
+    private static void registerSourceTemp(File sourceFile, Path path) {
+        String key = sourceFile.getAbsolutePath();
+        SOURCE_TEMP_FILES.put(key, path);
+        SOURCE_TEMP_REFS.computeIfAbsent(key, k -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
+    }
+
+    /** 释放引用计数，归零时删除源临时文件 */
+    private static void releaseSourceTemp(File sourceFile) {
+        String key = sourceFile.getAbsolutePath();
+        java.util.concurrent.atomic.AtomicInteger ref = SOURCE_TEMP_REFS.get(key);
+        if (ref != null && ref.decrementAndGet() == 0) {
+            SOURCE_TEMP_REFS.remove(key);
+            Path path = SOURCE_TEMP_FILES.remove(key);
+            deleteQuietly(path);
         }
     }
 
@@ -288,7 +350,10 @@ public class CadHandler extends TransViewHandler {
         try {
             tmpPath = cache.prepareDirect(cacheKey);
             Path finalTmpPath = tmpPath;
-            Runnable onDone = () -> RUNNING_TASKS.remove(cacheKey);
+            Runnable onDone = () -> {
+                RUNNING_TASKS.remove(cacheKey);
+                releaseSourceTemp(file);
+            };
             Future<?> realFuture = getConversionExecutor().submitAsync(() -> {
                 try {
                     convertToFile(file, finalTmpPath, layout);
@@ -333,7 +398,10 @@ public class CadHandler extends TransViewHandler {
             try {
                 tmpPath = cache.prepareDirect(key);
                 Path finalTmpPath = tmpPath;
-                Runnable onDone = () -> RUNNING_TASKS.remove(key);
+                Runnable onDone = () -> {
+                    RUNNING_TASKS.remove(key);
+                    releaseSourceTemp(file);
+                };
                 Future<?> realFuture = getConversionExecutor().submitAsync(() -> {
                     try {
                         convertToFile(file, finalTmpPath, layout);

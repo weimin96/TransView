@@ -44,6 +44,7 @@ Format conversion:
 - **DWG disk cache**: CAD conversion results stored on disk; same file + same config never re-converts
 - **Thumbnail first**: DWG first access returns 800x600 thumbnail (PNG), async generates full SVG/PDF in background
 - **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling for all CAD paths (File, InputStream, cache-enabled/disabled), large DWGs don't block other tasks
+- **InputStream caching**: InputStream CAD preview now supports disk cache — source is saved to temp file, cached results streamed directly from disk on subsequent hits
 - **Multi-layout caching**: Pre-cache multiple DWG layouts, layout switching hits cache instantly
 - **HTML security filtering**: Jsoup whitelist strategy, automatically removes script, iframe, event handlers etc.
 

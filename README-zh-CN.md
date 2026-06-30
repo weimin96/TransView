@@ -44,6 +44,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 - **DWG 磁盘缓存**：CAD 转换结果落磁盘，相同文件+相同配置不会重复转换
 - **缩略图优先**：DWG 首次访问返回 800x600 缩略图（PNG），后台异步生成完整 SVG/PDF
 - **CAD 线程池隔离**：独立线程池 + 内存感知限流，覆盖全部 CAD 路径（File、InputStream、缓存开启/关闭），大 DWG 不阻塞其他转换任务
+- **InputStream 磁盘缓存**：CAD InputStream 预览支持磁盘缓存 — 源文件落盘为临时文件，后续命中缓存直接从磁盘流式输出，无需重新加载 CadImage
 - **多布局缓存**：支持预缓存多个 DWG 布局，切换布局时直接命中缓存
 - **HTML 安全过滤**：基于 Jsoup 白名单策略，自动移除 script、iframe、事件处理器等
 
