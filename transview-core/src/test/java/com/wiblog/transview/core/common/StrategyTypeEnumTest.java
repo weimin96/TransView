@@ -9,8 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StrategyTypeEnumTest {
 
     @After
-    public void restoreCadConvertType() {
+    public void restoreConvertType() {
         TransViewProperties.View.Cad.setConvertType(CadConvertType.SVG);
+        TransViewProperties.View.Word.setConvertType(WordConvertType.PDF);
     }
 
     @Test
@@ -20,5 +21,14 @@ public class StrategyTypeEnumTest {
 
         TransViewProperties.View.Cad.setConvertType(CadConvertType.SVG);
         assertThat(StrategyTypeEnum.getMediaType("dwg")).isEqualTo(Constant.MediaType.IMAGE_SVG_VALUE);
+    }
+
+    @Test
+    public void getMediaTypeUsesCurrentWordConvertType() {
+        TransViewProperties.View.Word.setConvertType(WordConvertType.PDF);
+        assertThat(StrategyTypeEnum.getMediaType("docx")).isEqualTo(Constant.MediaType.PDF_VALUE);
+
+        TransViewProperties.View.Word.setConvertType(WordConvertType.SVG);
+        assertThat(StrategyTypeEnum.getMediaType("docx")).isEqualTo(Constant.MediaType.IMAGE_SVG_VALUE);
     }
 }

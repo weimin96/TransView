@@ -1,1 +1,2 @@
 com.wiblog.transview.poi.handler.ExcelHandler
+com.wiblog.transview.poi.handler.WordHandler

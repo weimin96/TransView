@@ -146,6 +146,17 @@
       "defaultValue": "0"
     },
     {
+      "name": "transview.view.word.convert-type",
+      "type": "com.wiblog.transview.core.common.WordConvertType",
+      "description": "Word 预览输出格式",
+      "defaultValue": "pdf"
+    },
+    {
+      "name": "transview.view.word.license-path",
+      "type": "java.lang.String",
+      "description": "Aspose.Words license 路径，默认尝试 classpath:license.xml，支持 classpath: 或文件路径"
+    },
+    {
       "name": "transview.view.fonts-folder",
       "type": "java.lang.String",
       "description": "字体目录，用于文本渲染"
@@ -174,11 +185,24 @@
       "values": [
         {
           "value": "svg",
-          "description": "转换为 SVG 矢量图"
+          "description": "转换为 svg 矢量图"
         },
         {
           "value": "pdf",
-          "description": "转换为 PDF 文档"
+          "description": "转换为 pdf 文档"
+        }
+      ]
+    },
+    {
+      "name": "transview.view.word.convert-type",
+      "values": [
+        {
+          "value": "svg",
+          "description": "转换为 svg 矢量图"
+        },
+        {
+          "value": "pdf",
+          "description": "转换为 pdf 文档"
         }
       ]
     }

@@ -34,9 +34,12 @@ Zero-conversion preview (direct output):
 Conversion preview:
 - CAD: dwg, dxf (default SVG, configurable to PDF)
 - Excel: xls, xlsx (output SVG)
+- Word: doc, docx (default pdf, configurable to svg)
+- OFD: recognized, but Aspose.Words 24.6 does not support OFD input
 
 Format conversion:
 - svg -> png
+- doc/docx -> svg/pdf
 
 ### Key Features
 
@@ -192,7 +195,7 @@ transview:
 
     # CAD configuration
     cad:
-      # Output format: SVG (default, best for browser preview) or PDF (for print/high-fidelity)
+      # Output format: svg (default, best for browser preview) or pdf (for print/high-fidelity)
       convert-type: svg
 
       # Render page dimensions (pixels)
@@ -220,6 +223,13 @@ transview:
       one-page-per-sheet: true    # Render each worksheet as one page
       max-rows: -1                # Max rows to render (-1 = unlimited)
       max-columns: -1             # Max columns to render (-1 = unlimited)
+
+    # Word configuration
+    word:
+      # Output format: pdf (default) or svg
+      convert-type: pdf
+      # Aspose.Words license path; defaults to classpath:license.xml when present
+      # license-path: classpath:license.xml
 
   # General thread pool (for non-CAD preview/conversion tasks)
   executor:

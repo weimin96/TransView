@@ -34,9 +34,12 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 在线预览（需要转换）：
 - CAD：dwg、dxf（默认输出 SVG，可配置为 PDF）
 - Excel：xls、xlsx（输出 SVG）
+- Word：doc、docx（默认输出 pdf，可配置为 svg）
+- OFD：可识别扩展名，但 Aspose.Words 24.6 不支持 OFD 输入
 
 格式转换：
 - svg -> png
+- doc/docx -> svg/pdf
 
 ### 核心特性
 
@@ -192,7 +195,7 @@ transview:
 
     # CAD 配置
     cad:
-      # 输出格式：SVG（默认，适合浏览器预览）或 PDF（适合打印/高保真）
+      # 输出格式：svg（默认，适合浏览器预览）或 pdf（适合打印/高保真）
       convert-type: svg
 
       # 渲染页面尺寸（像素）
@@ -220,6 +223,13 @@ transview:
       one-page-per-sheet: true    # 是否每张工作表渲染为一页
       max-rows: -1                # 最大渲染行数（-1 不限制）
       max-columns: -1             # 最大渲染列数（-1 不限制）
+
+    # Word 配置
+    word:
+      # 输出格式：pdf（默认）或 svg
+      convert-type: pdf
+      # Aspose.Words license 路径；存在 classpath:license.xml 时会默认加载
+      # license-path: classpath:license.xml
 
   # 通用线程池（用于非 CAD 的预览/转换任务）
   executor:

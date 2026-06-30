@@ -1,6 +1,7 @@
 package com.wiblog.transview.core.bean;
 
 import com.wiblog.transview.core.common.CadConvertType;
+import com.wiblog.transview.core.common.WordConvertType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -133,6 +134,24 @@ public class TransViewProperties {
             @Getter
             @Setter
             private static String[] extraLayouts;
+
+        }
+
+        public static class Word {
+
+            /**
+             * Word 预览输出类型 svg|pdf
+             */
+            @Getter
+            @Setter
+            private static WordConvertType convertType = WordConvertType.PDF;
+
+            /**
+             * Aspose.Words license 路径，默认尝试 classpath:license.xml
+             */
+            @Getter
+            @Setter
+            private static String licensePath;
 
         }
     }

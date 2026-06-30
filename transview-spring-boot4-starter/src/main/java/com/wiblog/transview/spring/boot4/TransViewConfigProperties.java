@@ -1,6 +1,7 @@
 package com.wiblog.transview.spring.boot4;
 
 import com.wiblog.transview.core.common.CadConvertType;
+import com.wiblog.transview.core.common.WordConvertType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
@@ -33,6 +34,7 @@ public class TransViewConfigProperties {
         private boolean removeWatermark = true;
         private Excel excel = new Excel();
         private Cad cad = new Cad();
+        private Word word = new Word();
 
         public boolean isInterrupted() { return interrupted; }
         public void setInterrupted(boolean interrupted) { this.interrupted = interrupted; }
@@ -46,6 +48,8 @@ public class TransViewConfigProperties {
         public void setExcel(Excel excel) { this.excel = excel; }
         public Cad getCad() { return cad; }
         public void setCad(Cad cad) { this.cad = cad; }
+        public Word getWord() { return word; }
+        public void setWord(Word word) { this.word = word; }
     }
 
     public static class Excel {
@@ -87,6 +91,16 @@ public class TransViewConfigProperties {
         public void setLayout(String layout) { this.layout = layout; }
         public String[] getExtraLayouts() { return extraLayouts; }
         public void setExtraLayouts(String[] extraLayouts) { this.extraLayouts = extraLayouts; }
+    }
+
+    public static class Word {
+        private WordConvertType convertType = WordConvertType.PDF;
+        private String licensePath;
+
+        public WordConvertType getConvertType() { return convertType; }
+        public void setConvertType(WordConvertType convertType) { this.convertType = convertType; }
+        public String getLicensePath() { return licensePath; }
+        public void setLicensePath(String licensePath) { this.licensePath = licensePath; }
     }
 
     public static class Executor {

@@ -52,6 +52,12 @@ public class TransViewAutoConfiguration {
             com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setExtraLayouts(properties.getView().getCad().getExtraLayouts());
         }
 
+        // Word
+        com.wiblog.transview.core.bean.TransViewProperties.View.Word.setConvertType(properties.getView().getWord().getConvertType());
+        if (properties.getView().getWord().getLicensePath() != null) {
+            com.wiblog.transview.core.bean.TransViewProperties.View.Word.setLicensePath(properties.getView().getWord().getLicensePath());
+        }
+
         // Executor
         TransViewHandler.initExecutor(
                 properties.getExecutor().getCorePoolSize(),

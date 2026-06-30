@@ -15,6 +15,9 @@ public enum ExtensionEnum {
     JPG("jpg"),
     JPEG("jpeg"),
     GIF("gif"),
+    DOC("doc"),
+    DOCX("docx"),
+    OFD("ofd"),
     SVG("svg"),
     PDF("pdf");
 

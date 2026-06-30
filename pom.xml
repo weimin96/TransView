@@ -42,6 +42,7 @@
         <spring-boot.version>3.3.4</spring-boot.version>
         <aspose-cad.version>24.3</aspose-cad.version>
         <aspose-excel.version>24.6</aspose-excel.version>
+        <aspose-words.version>24.6</aspose-words.version>
         <batik.version>1.14</batik.version>
         <commons-io.version>2.17.0</commons-io.version>
         <jsoup.version>1.18.1</jsoup.version>
@@ -189,6 +190,14 @@
                 <groupId>com.aspose</groupId>
                 <artifactId>aspose-cells</artifactId>
                 <version>${aspose-excel.version}</version>
+            </dependency>
+
+            <!--word解析-->
+            <dependency>
+                <groupId>com.aspose</groupId>
+                <artifactId>aspose-words</artifactId>
+                <version>${aspose-words.version}</version>
+                <classifier>jdk17</classifier>
             </dependency>
 
             <!-- svg解析 -->
