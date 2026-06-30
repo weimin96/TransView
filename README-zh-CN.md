@@ -35,7 +35,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 - CAD：dwg、dxf（默认输出 SVG，可配置为 PDF）
 - Excel：xls、xlsx（输出 SVG）
 - Word：doc、docx（默认输出 pdf，可配置为 svg）
-- OFD：可识别扩展名，但 Aspose.Words 24.6 不支持 OFD 输入
+- OFD：ofd（输出 PDF）
 
 格式转换：
 - svg -> png

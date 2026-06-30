@@ -25,6 +25,7 @@
         <module>transview-core</module>
         <module>transview-cad</module>
         <module>transview-poi</module>
+        <module>transview-ofd</module>
         <module>transview-servlet-javax</module>
         <module>transview-servlet-jakarta</module>
         <module>transview-all</module>
@@ -43,6 +44,7 @@
         <aspose-cad.version>24.3</aspose-cad.version>
         <aspose-excel.version>24.6</aspose-excel.version>
         <aspose-words.version>24.6</aspose-words.version>
+        <ofdrw.version>2.3.9</ofdrw.version>
         <batik.version>1.14</batik.version>
         <commons-io.version>2.17.0</commons-io.version>
         <jsoup.version>1.18.1</jsoup.version>
@@ -99,6 +101,11 @@
             <dependency>
                 <groupId>io.github.weimin96</groupId>
                 <artifactId>transview-poi</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.weimin96</groupId>
+                <artifactId>transview-ofd</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -198,6 +205,13 @@
                 <artifactId>aspose-words</artifactId>
                 <version>${aspose-words.version}</version>
                 <classifier>jdk17</classifier>
+            </dependency>
+
+            <!--ofd解析-->
+            <dependency>
+                <groupId>org.ofdrw</groupId>
+                <artifactId>ofdrw-converter</artifactId>
+                <version>${ofdrw.version}</version>
             </dependency>
 
             <!-- svg解析 -->

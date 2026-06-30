@@ -31,4 +31,11 @@ public class StrategyTypeEnumTest {
         TransViewProperties.View.Word.setConvertType(WordConvertType.SVG);
         assertThat(StrategyTypeEnum.getMediaType("docx")).isEqualTo(Constant.MediaType.IMAGE_SVG_VALUE);
     }
+
+    @Test
+    public void getMediaTypeUsesPdfForOfd() {
+        TransViewProperties.View.Word.setConvertType(WordConvertType.SVG);
+
+        assertThat(StrategyTypeEnum.getMediaType("ofd")).isEqualTo(Constant.MediaType.PDF_VALUE);
+    }
 }

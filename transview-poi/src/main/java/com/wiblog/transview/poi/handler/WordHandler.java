@@ -57,9 +57,6 @@ public class WordHandler extends TransViewHandler {
 
     @Override
     public void viewHandler(InputStream inputStream, OutputStream outputStream, String extension) throws Exception {
-        if (StrategyTypeEnum.OFD.getType().equals(extension)) {
-            throw new UnsupportedOperationException("Aspose.Words 24.6 不支持 OFD 输入格式");
-        }
         if (StrategyTypeEnum.DOC.getType().equals(extension) || StrategyTypeEnum.DOCX.getType().equals(extension)) {
             if (TransViewProperties.View.Word.getConvertType() == WordConvertType.PDF) {
                 setOutputContentType(Constant.MediaType.PDF_VALUE);

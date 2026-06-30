@@ -60,13 +60,6 @@ public class WordHandlerTest {
     }
 
     @Test
-    public void viewHandlerShouldFailClearlyForOfd() {
-        assertThatThrownBy(() -> new WordHandler().viewHandler(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(), "ofd"))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("不支持 OFD 输入格式");
-    }
-
-    @Test
     public void viewHandlerShouldUseDefaultPdfPreviewType() throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         new WordHandler().viewHandler(new ByteArrayInputStream(createDocxBytes()), outputStream, "docx");

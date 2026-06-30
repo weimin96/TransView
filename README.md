@@ -35,7 +35,7 @@ Conversion preview:
 - CAD: dwg, dxf (default SVG, configurable to PDF)
 - Excel: xls, xlsx (output SVG)
 - Word: doc, docx (default pdf, configurable to svg)
-- OFD: recognized, but Aspose.Words 24.6 does not support OFD input
+- OFD: ofd (output PDF)
 
 Format conversion:
 - svg -> png
