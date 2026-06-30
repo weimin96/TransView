@@ -197,4 +197,55 @@ public class TransViewContext {
         } catch (Exception ignored) {
         }
     }
+
+    /**
+     * 文件转换入口
+     *
+     * @param file     源文件
+     * @param target   转换目标格式
+     * @param response HttpServletResponse
+     */
+    public static void convert(File file, com.wiblog.transview.core.common.ExtensionEnum target, HttpServletResponse response) {
+        String extension = Util.getExtension(file.getName());
+        if (Util.isBlank(extension)) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(StrategyTypeEnum.getMediaType(extension));
+        try {
+            com.wiblog.transview.core.context.TransViewContext.convert(file, target, response.getOutputStream());
+        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
+            writeBusy(response);
+        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
+            writeTimeout(response);
+        } catch (Exception e) {
+            throw new RuntimeException("转换 " + extension + " 文件失败", e);
+        }
+    }
+
+    /**
+     * 文件转换入口（InputStream）
+     *
+     * @param inputStream 文件流
+     * @param filename    文件名
+     * @param target      转换目标格式
+     * @param response    HttpServletResponse
+     */
+    public static void convert(InputStream inputStream, String filename, com.wiblog.transview.core.common.ExtensionEnum target, HttpServletResponse response) {
+        String extension = Util.getExtension(filename);
+        if (Util.isBlank(extension)) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(StrategyTypeEnum.getMediaType(extension));
+        try {
+            com.wiblog.transview.core.context.TransViewContext.convert(inputStream, extension, target, response.getOutputStream());
+        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
+            writeBusy(response);
+        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
+            writeTimeout(response);
+        } catch (Exception e) {
+            throw new RuntimeException("转换 " + extension + " 文件失败", e);
+        }
+    }
 }

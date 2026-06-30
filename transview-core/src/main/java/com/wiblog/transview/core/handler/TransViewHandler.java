@@ -246,6 +246,24 @@ public abstract class TransViewHandler {
     }
 
     /**
+     * 文件转换（InputStream → OutputStream）
+     * @param inputStream 文件流
+     * @param sourceExt   源文件后缀
+     * @param targetExt   转换目标格式
+     * @param outputStream 输出流
+     */
+    public void convert(InputStream inputStream, String sourceExt, ExtensionEnum targetExt, OutputStream outputStream) {
+        try {
+            check(sourceExt);
+            convertCore(inputStream, ExtensionEnum.getByValue(sourceExt), targetExt, outputStream);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * 核心转换逻辑（带超时和线程池保护）
      */
     private void convertCore(InputStream inputStream, ExtensionEnum sourceExt,

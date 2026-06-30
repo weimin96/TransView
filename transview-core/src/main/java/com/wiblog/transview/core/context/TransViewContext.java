@@ -92,4 +92,11 @@ public class TransViewContext {
         }
         createStrategy(extension).convert(inputStream, extension, targetFile);
     }
+
+    public static void convert(InputStream inputStream, String extension, ExtensionEnum target, OutputStream outputStream) {
+        if (Util.isBlank(extension)) {
+            throw new RuntimeException("获取不到文件后缀");
+        }
+        createStrategy(extension).convert(inputStream, extension, target, outputStream);
+    }
 }
