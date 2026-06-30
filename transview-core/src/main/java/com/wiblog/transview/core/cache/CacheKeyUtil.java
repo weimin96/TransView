@@ -39,11 +39,9 @@ public class CacheKeyUtil {
         try {
             String fileHash = sha256(file);
             long fileSize = file.length();
-            long lastModified = file.lastModified();
 
             String params = fileHash
                     + "|" + fileSize
-                    + "|" + lastModified
                     + "|aspose-cad"
                     + "|" + TransViewProperties.View.Cad.getConvertType().getType()
                     + "|" + layout

@@ -51,6 +51,23 @@ public class CacheKeyUtilTest {
     }
 
     @Test
+    public void generateCadCacheKeyIsStableForSameContentInDifferentFiles() throws IOException {
+        File anotherFile = File.createTempFile("test-dwg-copy-", ".dwg");
+        try {
+            try (FileWriter w = new FileWriter(anotherFile)) {
+                w.write("dummy dwg content for testing");
+            }
+
+            String key1 = CacheKeyUtil.generateCadCacheKey(tempFile);
+            String key2 = CacheKeyUtil.generateCadCacheKey(anotherFile);
+
+            assertThat(key1).isEqualTo(key2);
+        } finally {
+            anotherFile.delete();
+        }
+    }
+
+    @Test
     public void generateCadCacheKeyDiffersForDifferentLayouts() {
         String key1 = CacheKeyUtil.generateCadCacheKey(tempFile, "Model");
         String key2 = CacheKeyUtil.generateCadCacheKey(tempFile, "Layout1");

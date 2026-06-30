@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 
 /**
@@ -124,7 +126,7 @@ public class TransViewContext {
         response.setCharacterEncoding("UTF-8");
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         try {
-            com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
+            com.wiblog.transview.core.context.TransViewContext.preview(file, previewOutputStream(response));
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
@@ -138,7 +140,7 @@ public class TransViewContext {
         response.setCharacterEncoding("UTF-8");
         response.setContentType(StrategyTypeEnum.getMediaType(extension));
         try {
-            com.wiblog.transview.core.context.TransViewContext.preview(inputStream, filename, response.getOutputStream());
+            com.wiblog.transview.core.context.TransViewContext.preview(inputStream, filename, previewOutputStream(response));
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
@@ -150,12 +152,9 @@ public class TransViewContext {
 
     private static void previewCad(File file, String extension, HttpServletRequest request, HttpServletResponse response) {
         response.setCharacterEncoding("UTF-8");
+        response.setContentType(StrategyTypeEnum.getMediaType(extension));
         try {
-            com.wiblog.transview.core.context.TransViewContext.preview(file, response.getOutputStream());
-            String contentType = com.wiblog.transview.core.handler.TransViewHandler.consumeContentType();
-            if (contentType != null) {
-                response.setContentType(contentType);
-            }
+            com.wiblog.transview.core.context.TransViewContext.preview(file, previewOutputStream(response));
         } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
             writeBusy(response);
         } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
@@ -163,6 +162,46 @@ public class TransViewContext {
         } catch (Exception e) {
             throw new RuntimeException("预览 " + extension + " 文件失败", e);
         }
+    }
+
+    private static OutputStream previewOutputStream(HttpServletResponse response) throws IOException {
+        OutputStream outputStream = response.getOutputStream();
+        return new OutputStream() {
+            private boolean contentTypeDetected;
+
+            @Override
+            public void write(int b) throws IOException {
+                detectContentType();
+                outputStream.write(b);
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                detectContentType();
+                outputStream.write(b, off, len);
+            }
+
+            @Override
+            public void flush() throws IOException {
+                outputStream.flush();
+            }
+
+            @Override
+            public void close() throws IOException {
+                outputStream.close();
+            }
+
+            private void detectContentType() {
+                if (contentTypeDetected) {
+                    return;
+                }
+                contentTypeDetected = true;
+                String contentType = com.wiblog.transview.core.handler.TransViewHandler.consumeContentType();
+                if (contentType != null) {
+                    response.setContentType(contentType);
+                }
+            }
+        };
     }
 
     private static boolean isCachableType(String extension) {
@@ -198,39 +237,15 @@ public class TransViewContext {
         }
     }
 
-    public static void convert(File file, com.wiblog.transview.core.common.ExtensionEnum target, HttpServletResponse response) {
-        String extension = Util.getExtension(file.getName());
-        if (Util.isBlank(extension)) {
-            throw new RuntimeException("获取不到文件后缀");
-        }
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType(StrategyTypeEnum.getMediaType(extension));
-        try {
-            com.wiblog.transview.core.context.TransViewContext.convert(file, target, response.getOutputStream());
-        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
-            writeBusy(response);
-        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
-            writeTimeout(response);
-        } catch (Exception e) {
-            throw new RuntimeException("转换 " + extension + " 文件失败", e);
-        }
+    public static void convert(File file, com.wiblog.transview.core.common.ExtensionEnum target, OutputStream outputStream) {
+        com.wiblog.transview.core.context.TransViewContext.convert(file, target, outputStream);
     }
 
-    public static void convert(InputStream inputStream, String filename, com.wiblog.transview.core.common.ExtensionEnum target, HttpServletResponse response) {
+    public static void convert(InputStream inputStream, String filename, com.wiblog.transview.core.common.ExtensionEnum target, OutputStream outputStream) {
         String extension = Util.getExtension(filename);
         if (Util.isBlank(extension)) {
             throw new RuntimeException("获取不到文件后缀");
         }
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType(StrategyTypeEnum.getMediaType(extension));
-        try {
-            com.wiblog.transview.core.context.TransViewContext.convert(inputStream, extension, target, response.getOutputStream());
-        } catch (com.wiblog.transview.core.exception.PreviewBusyException e) {
-            writeBusy(response);
-        } catch (com.wiblog.transview.core.exception.PreviewTimeoutException e) {
-            writeTimeout(response);
-        } catch (Exception e) {
-            throw new RuntimeException("转换 " + extension + " 文件失败", e);
-        }
+        com.wiblog.transview.core.context.TransViewContext.convert(inputStream, extension, target, outputStream);
     }
 }

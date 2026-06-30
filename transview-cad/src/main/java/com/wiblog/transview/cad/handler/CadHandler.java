@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,8 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 缓存模式下的流程：
  * 1. 检查缓存 — 命中完整结果直接返回
- * 2. 缓存有缩略图 — 返回缩略图，后台异步生成完整结果
- * 3. 无缓存 — 快速生成缩略图并返回，后台异步生成完整结果
+ * 2. 缓存有缩略图但无完整结果 — 同步生成并返回完整结果
+ * 3. 无缓存 — 同步生成并返回完整结果
  * <p>
  * 完整结果直接写磁盘缓存文件，不经过堆内存。
  * 注意：removeWatermark=true 时，PDF/SVG 会先写入 ByteArrayOutputStream 再处理水印，
@@ -122,33 +123,18 @@ public class CadHandler extends TransViewHandler {
             return;
         }
 
-        // 2. 命中缩略图 — 返回缩略图，后台生成完整结果
+        // 2. 命中缩略图但未命中完整结果时，仍按配置同步返回完整结果
         File thumb = cache.getThumbnail(cacheKey);
         if (thumb != null) {
-            setOutputContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
-            kickOffAsync(file, cacheKey, layout, cache);
-            kickOffExtraLayoutsAsync(file, cache);
-            streamFile(thumb, outputStream);
+            setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
+            convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
             return;
         }
 
-        // 3. 无缓存 — 生成缩略图 + 后台完整转换
-        // 缩略图和完整转换各自独立加载 CadImage（Aspose CadImage 非线程安全，不能跨线程共享）
-        byte[] thumbnailData = generateThumbnail(file, layout);
-        if (thumbnailData != null) {
-            setOutputContentType(com.wiblog.transview.core.common.Constant.MediaType.IMAGE_PNG_VALUE);
-            cache.putThumbnail(cacheKey, thumbnailData);
-            kickOffAsync(file, cacheKey, layout, cache);
-            kickOffExtraLayoutsAsync(file, cache);
-            try {
-                outputStream.write(thumbnailData);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
-            convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
-        }
+        // 3. 无缓存 — 按配置同步转换并返回完整结果
+        setOutputContentType(StrategyTypeEnum.getMediaType("dwg"));
+        convertAndCacheSync(file, cacheKey, layout, cache, outputStream);
+        kickOffExtraLayoutsAsync(file, cache);
     }
 
     /**
@@ -282,12 +268,7 @@ public class CadHandler extends TransViewHandler {
         CadImage cadImage = null;
         try {
             cadImage = (CadImage) Image.load(inputStream);
-            CadRasterizationOptions rasterOptions = buildRasterOptions(TransViewProperties.View.Cad.getLayout());
-            if (TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF) {
-                convertToPdf(outputStream, rasterOptions, cadImage);
-            } else {
-                convertToSvg(outputStream, rasterOptions, cadImage);
-            }
+            convertCadImage(cadImage, TransViewProperties.View.Cad.getLayout(), outputStream);
         } finally {
             if (cadImage != null) {
                 cadImage.close();
@@ -309,12 +290,11 @@ public class CadHandler extends TransViewHandler {
         CadImage cadImage = null;
         try {
             cadImage = (CadImage) Image.load(inputStream);
-            CadRasterizationOptions rasterOptions = buildRasterOptions(TransViewProperties.View.Cad.getLayout());
 
             if (targetExtensionEnum == ExtensionEnum.PDF) {
-                convertToPdf(outputStream, rasterOptions, cadImage);
+                convertCadImage(cadImage, TransViewProperties.View.Cad.getLayout(), ExtensionEnum.PDF, outputStream);
             } else if (targetExtensionEnum == ExtensionEnum.SVG) {
-                convertToSvg(outputStream, rasterOptions, cadImage);
+                convertCadImage(cadImage, TransViewProperties.View.Cad.getLayout(), ExtensionEnum.SVG, outputStream);
             } else {
                 throw new IllegalArgumentException("CAD 仅支持转换为 PDF 或 SVG: " + targetExtensionEnum);
             }
@@ -484,13 +464,8 @@ public class CadHandler extends TransViewHandler {
             try (InputStream in = new FileInputStream(sourceFile)) {
                 cadImage = (CadImage) Image.load(in);
             }
-            CadRasterizationOptions rasterOptions = buildRasterOptions(layout);
             try (OutputStream out = Files.newOutputStream(targetPath)) {
-                if (TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF) {
-                    convertToPdf(out, rasterOptions, cadImage);
-                } else {
-                    convertToSvg(out, rasterOptions, cadImage);
-                }
+                convertCadImage(cadImage, layout, out);
             }
         } finally {
             if (cadImage != null) {
@@ -518,7 +493,7 @@ public class CadHandler extends TransViewHandler {
             opts.setPageHeight(THUMBNAIL_HEIGHT);
             opts.setDrawType(CadDrawTypeMode.UseObjectColor);
             opts.setBackgroundColor(Color.getWhite());
-            opts.setLayouts(new String[]{layout});
+            applyLayout(opts, cadImage, layout);
             if (TransViewProperties.View.Cad.getShxFontsFolder() != null) {
                 opts.setShxFonts(TransViewProperties.View.Cad.getShxFontsFolder());
             }
@@ -559,11 +534,57 @@ public class CadHandler extends TransViewHandler {
         opts.setPageHeight(TransViewProperties.View.Cad.getPageHeight());
         opts.setDrawType(CadDrawTypeMode.UseObjectColor);
         opts.setBackgroundColor(Color.getWhite());
-        opts.setLayouts(new String[]{layout});
+        applyLayout(opts, layout);
         if (TransViewProperties.View.Cad.getShxFontsFolder() != null) {
             opts.setShxFonts(TransViewProperties.View.Cad.getShxFontsFolder());
         }
         return opts;
+    }
+
+    private void convertCadImage(CadImage cadImage, String layout, OutputStream outputStream) throws Exception {
+        ExtensionEnum target = TransViewProperties.View.Cad.getConvertType() == CadConvertType.PDF ? ExtensionEnum.PDF : ExtensionEnum.SVG;
+        convertCadImage(cadImage, layout, target, outputStream);
+    }
+
+    private void convertCadImage(CadImage cadImage, String layout, ExtensionEnum target, OutputStream outputStream) throws Exception {
+        convertCadImage(cadImage, buildRasterOptions(cadImage, layout), target, outputStream);
+    }
+
+    private void convertCadImage(CadImage cadImage, CadRasterizationOptions rasterOptions, ExtensionEnum target, OutputStream outputStream) throws Exception {
+        if (target == ExtensionEnum.PDF) {
+            convertToPdf(outputStream, rasterOptions, cadImage);
+        } else {
+            convertToSvg(outputStream, rasterOptions, cadImage);
+        }
+    }
+
+    private CadRasterizationOptions buildRasterOptions(CadImage cadImage, String layout) {
+        CadRasterizationOptions opts = buildRasterOptions(null);
+        applyLayout(opts, cadImage, layout);
+        return opts;
+    }
+
+    private static void applyLayout(CadRasterizationOptions opts, CadImage cadImage, String layout) {
+        if (!Util.isBlank(layout) && hasLayout(cadImage, layout)) {
+            opts.setLayouts(new String[]{layout});
+        }
+    }
+
+    private static void applyLayout(CadRasterizationOptions opts, String layout) {
+        if (!Util.isBlank(layout)) {
+            opts.setLayouts(new String[]{layout});
+        }
+    }
+
+    private static boolean hasLayout(CadImage cadImage, String layout) {
+        if (cadImage == null || Util.isBlank(layout)) {
+            return false;
+        }
+        Map<String, ?> layouts = cadImage.getLayouts();
+        if (layouts == null || layouts.isEmpty()) {
+            return false;
+        }
+        return layouts.keySet().stream().anyMatch(name -> layout.equalsIgnoreCase(name));
     }
 
     private void streamFile(File file, OutputStream outputStream) {
