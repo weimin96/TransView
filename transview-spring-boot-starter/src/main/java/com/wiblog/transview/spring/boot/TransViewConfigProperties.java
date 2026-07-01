@@ -58,6 +58,7 @@ public class TransViewConfigProperties {
         private boolean onePagePerSheet = true;
         private int maxRows = -1;
         private int maxColumns = -1;
+        private String licensePath;
 
         public boolean isCalculateFormula() { return calculateFormula; }
         public void setCalculateFormula(boolean calculateFormula) { this.calculateFormula = calculateFormula; }
@@ -69,6 +70,8 @@ public class TransViewConfigProperties {
         public void setMaxRows(int maxRows) { this.maxRows = maxRows; }
         public int getMaxColumns() { return maxColumns; }
         public void setMaxColumns(int maxColumns) { this.maxColumns = maxColumns; }
+        public String getLicensePath() { return licensePath; }
+        public void setLicensePath(String licensePath) { this.licensePath = licensePath; }
     }
 
     public static class Cad {
@@ -78,6 +81,7 @@ public class TransViewConfigProperties {
         private int pageHeight = 1228;
         private String layout = "Model";
         private String[] extraLayouts;
+        private String licensePath;
 
         public CadConvertType getConvertType() { return convertType; }
         public void setConvertType(CadConvertType convertType) { this.convertType = convertType; }
@@ -91,6 +95,8 @@ public class TransViewConfigProperties {
         public void setLayout(String layout) { this.layout = layout; }
         public String[] getExtraLayouts() { return extraLayouts; }
         public void setExtraLayouts(String[] extraLayouts) { this.extraLayouts = extraLayouts; }
+        public String getLicensePath() { return licensePath; }
+        public void setLicensePath(String licensePath) { this.licensePath = licensePath; }
     }
 
     public static class Word {

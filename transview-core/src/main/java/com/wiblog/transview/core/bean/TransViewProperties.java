@@ -88,6 +88,13 @@ public class TransViewProperties {
             @Setter
             private static int maxColumns = -1;
 
+            /**
+             * Aspose.Cells license 路径，显式配置后加载
+             */
+            @Getter
+            @Setter
+            private static String licensePath;
+
         }
 
         public static class Cad {
@@ -135,6 +142,13 @@ public class TransViewProperties {
             @Setter
             private static String[] extraLayouts;
 
+            /**
+             * Aspose.CAD license 路径，显式配置后加载
+             */
+            @Getter
+            @Setter
+            private static String licensePath;
+
         }
 
         public static class Word {
@@ -147,7 +161,7 @@ public class TransViewProperties {
             private static WordConvertType convertType = WordConvertType.PDF;
 
             /**
-             * Aspose.Words license 路径，默认尝试 classpath:license.xml
+             * Aspose.Words license 路径，显式配置后加载
              */
             @Getter
             @Setter

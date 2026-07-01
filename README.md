@@ -216,6 +216,9 @@ transview:
       shx-fonts-folder:
         - /path/to/shx-fonts
 
+      # Aspose.CAD license path; loaded only when explicitly configured
+      # license-path: classpath:license.xml
+
     # Excel configuration
     excel:
       calculate-formula: false    # Recalculate formulas before preview
@@ -223,12 +226,14 @@ transview:
       one-page-per-sheet: true    # Render each worksheet as one page
       max-rows: -1                # Max rows to render (-1 = unlimited)
       max-columns: -1             # Max columns to render (-1 = unlimited)
+      # Aspose.Cells license path; loaded only when explicitly configured
+      # license-path: classpath:license.xml
 
     # Word configuration
     word:
       # Output format: pdf (default) or svg
       convert-type: pdf
-      # Aspose.Words license path; defaults to classpath:license.xml when present
+      # Aspose.Words license path; loaded only when explicitly configured
       # license-path: classpath:license.xml
 
   # General thread pool (for non-CAD preview/conversion tasks)

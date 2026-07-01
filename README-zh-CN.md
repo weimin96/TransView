@@ -216,6 +216,9 @@ transview:
       shx-fonts-folder:
         - /path/to/shx-fonts
 
+      # Aspose.CAD license 路径；显式配置后加载
+      # license-path: classpath:license.xml
+
     # Excel 配置
     excel:
       calculate-formula: false    # 预览前是否重新计算公式
@@ -223,12 +226,14 @@ transview:
       one-page-per-sheet: true    # 是否每张工作表渲染为一页
       max-rows: -1                # 最大渲染行数（-1 不限制）
       max-columns: -1             # 最大渲染列数（-1 不限制）
+      # Aspose.Cells license 路径；显式配置后加载
+      # license-path: classpath:license.xml
 
     # Word 配置
     word:
       # 输出格式：pdf（默认）或 svg
       convert-type: pdf
-      # Aspose.Words license 路径；存在 classpath:license.xml 时会默认加载
+      # Aspose.Words license 路径；显式配置后加载
       # license-path: classpath:license.xml
 
   # 通用线程池（用于非 CAD 的预览/转换任务）

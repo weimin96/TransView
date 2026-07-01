@@ -6,6 +6,7 @@ import com.wiblog.transview.core.common.Constant;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.handler.TransViewHandler;
+import com.wiblog.transview.core.utils.LicenseUtil;
 import com.wiblog.transview.core.utils.SVGUtil;
 
 import java.io.*;
@@ -23,6 +24,12 @@ import java.util.List;
  * @since 2024/7/7 20:40
  */
 public class ExcelHandler extends TransViewHandler {
+
+    private static final Object LICENSE_LOCK = new Object();
+
+    private static volatile boolean licenseLoaded;
+
+    private static volatile String loadedLicensePath;
 
     @Override
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
@@ -51,6 +58,7 @@ public class ExcelHandler extends TransViewHandler {
      * @throws Exception 异常
      */
     public static void convertToSvgForResponse(InputStream inputStream, OutputStream outputStream) throws Exception {
+        loadLicense();
         Workbook workbook = loadWorkbook(inputStream);
         if (TransViewProperties.View.Excel.isCalculateFormula()) {
             workbook.calculateFormula();
@@ -93,7 +101,7 @@ public class ExcelHandler extends TransViewHandler {
 
         SheetRender sr = new SheetRender(sheet, options);
 
-        if (TransViewProperties.View.isRemoveWatermark()) {
+        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
             ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
             sr.toImage(0, byteOutputStream);
             ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
@@ -180,5 +188,33 @@ public class ExcelHandler extends TransViewHandler {
     private static void handleEmptyExcel(OutputStream outputStream) throws IOException {
         byte[] emptySvg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' background='#ffffff'><text x='10' y='20'>No Data</text></svg>".getBytes(StandardCharsets.UTF_8);
         outputStream.write(emptySvg);
+    }
+
+    private static void loadLicense() {
+        String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Excel.getLicensePath());
+        if (licensePath == null) {
+            return;
+        }
+        if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
+            return;
+        }
+        synchronized (LICENSE_LOCK) {
+            if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
+                return;
+            }
+            InputStream licenseStream;
+            try {
+                licenseStream = LicenseUtil.openStream(licensePath);
+            } catch (FileNotFoundException e) {
+                throw new IllegalStateException("Aspose.Cells license 加载失败: " + licensePath, e);
+            }
+            try (InputStream inputStream = licenseStream) {
+                new License().setLicense(inputStream);
+                loadedLicensePath = licensePath;
+                licenseLoaded = true;
+            } catch (Exception e) {
+                throw new IllegalStateException("Aspose.Cells license 加载失败: " + licensePath, e);
+            }
+        }
     }
 }

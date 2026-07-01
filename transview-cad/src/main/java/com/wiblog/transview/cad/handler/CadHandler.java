@@ -19,6 +19,7 @@ import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.exception.PreviewBusyException;
 import com.wiblog.transview.core.exception.PreviewTimeoutException;
 import com.wiblog.transview.core.handler.TransViewHandler;
+import com.wiblog.transview.core.utils.LicenseUtil;
 import com.wiblog.transview.core.utils.SVGUtil;
 import com.wiblog.transview.core.utils.Util;
 
@@ -49,6 +50,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * - 所有异步任务有 watchdog 超时监控
  */
 public class CadHandler extends TransViewHandler {
+
+    private static final Object LICENSE_LOCK = new Object();
+
+    private static volatile boolean licenseLoaded;
+
+    private static volatile String loadedLicensePath;
 
     private static volatile CadConversionExecutor conversionExecutor;
 
@@ -267,6 +274,7 @@ public class CadHandler extends TransViewHandler {
     public void viewHandler(InputStream inputStream, OutputStream outputStream, String extension) throws Exception {
         CadImage cadImage = null;
         try {
+            loadLicense();
             cadImage = (CadImage) Image.load(inputStream);
             convertCadImage(cadImage, TransViewProperties.View.Cad.getLayout(), outputStream);
         } finally {
@@ -289,6 +297,7 @@ public class CadHandler extends TransViewHandler {
 
         CadImage cadImage = null;
         try {
+            loadLicense();
             cadImage = (CadImage) Image.load(inputStream);
 
             if (targetExtensionEnum == ExtensionEnum.PDF) {
@@ -461,6 +470,7 @@ public class CadHandler extends TransViewHandler {
     private void convertToFile(File sourceFile, Path targetPath, String layout) throws Exception {
         CadImage cadImage = null;
         try {
+            loadLicense();
             try (InputStream in = new FileInputStream(sourceFile)) {
                 cadImage = (CadImage) Image.load(in);
             }
@@ -478,6 +488,7 @@ public class CadHandler extends TransViewHandler {
      * 从文件独立加载 CadImage（供缩略图渲染使用）
      */
     private static CadImage loadCadImage(File file) throws IOException {
+        loadLicense();
         try (InputStream in = new FileInputStream(file)) {
             return (CadImage) Image.load(in);
         }
@@ -606,10 +617,11 @@ public class CadHandler extends TransViewHandler {
     }
 
     public static void convertToPdf(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws Exception {
+        loadLicense();
         PdfOptions pdfOptions = new PdfOptions();
         pdfOptions.setVectorRasterizationOptions(rasterOptions);
 
-        if (TransViewProperties.View.isRemoveWatermark()) {
+        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
             ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
             cadImage.save(byteOutputStream, pdfOptions);
             ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
@@ -620,10 +632,11 @@ public class CadHandler extends TransViewHandler {
     }
 
     public static void convertToSvg(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws IOException {
+        loadLicense();
         SvgOptions svgOptions = new SvgOptions();
         svgOptions.setVectorRasterizationOptions(rasterOptions);
 
-        if (TransViewProperties.View.isRemoveWatermark()) {
+        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
             ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
             cadImage.save(byteOutputStream, svgOptions);
             ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
@@ -631,6 +644,34 @@ public class CadHandler extends TransViewHandler {
             outputStream.write(transformedXml.getBytes(StandardCharsets.UTF_8));
         } else {
             cadImage.save(outputStream, svgOptions);
+        }
+    }
+
+    private static void loadLicense() {
+        String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Cad.getLicensePath());
+        if (licensePath == null) {
+            return;
+        }
+        if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
+            return;
+        }
+        synchronized (LICENSE_LOCK) {
+            if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
+                return;
+            }
+            InputStream licenseStream;
+            try {
+                licenseStream = LicenseUtil.openStream(licensePath);
+            } catch (FileNotFoundException e) {
+                throw new IllegalStateException("Aspose.CAD license 加载失败: " + licensePath, e);
+            }
+            try (InputStream inputStream = licenseStream) {
+                new com.aspose.cad.License().setLicense(inputStream);
+                loadedLicensePath = licensePath;
+                licenseLoaded = true;
+            } catch (Exception e) {
+                throw new IllegalStateException("Aspose.CAD license 加载失败: " + licensePath, e);
+            }
         }
     }
 }

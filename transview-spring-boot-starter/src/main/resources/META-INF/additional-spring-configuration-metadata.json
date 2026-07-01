@@ -99,6 +99,11 @@
       "defaultValue": "Model"
     },
     {
+      "name": "transview.view.cad.license-path",
+      "type": "java.lang.String",
+      "description": "Aspose.CAD license 路径，显式配置后加载，支持 classpath: 或文件路径"
+    },
+    {
       "name": "transview.view.cad.page-height",
       "type": "java.lang.Integer",
       "description": "CAD 渲染页面高度（像素）",
@@ -140,6 +145,11 @@
       "defaultValue": "true"
     },
     {
+      "name": "transview.view.excel.license-path",
+      "type": "java.lang.String",
+      "description": "Aspose.Cells license 路径，显式配置后加载，支持 classpath: 或文件路径"
+    },
+    {
       "name": "transview.view.excel.sheet-index",
       "type": "java.lang.Integer",
       "description": "Excel 预览的工作表索引（从 0 开始）",
@@ -154,7 +164,7 @@
     {
       "name": "transview.view.word.license-path",
       "type": "java.lang.String",
-      "description": "Aspose.Words license 路径，默认尝试 classpath:license.xml，支持 classpath: 或文件路径"
+      "description": "Aspose.Words license 路径，显式配置后加载，支持 classpath: 或文件路径"
     },
     {
       "name": "transview.view.fonts-folder",

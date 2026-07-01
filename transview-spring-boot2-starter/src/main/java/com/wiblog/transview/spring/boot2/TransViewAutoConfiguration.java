@@ -39,6 +39,9 @@ public class TransViewAutoConfiguration {
         com.wiblog.transview.core.bean.TransViewProperties.View.Excel.setOnePagePerSheet(properties.getView().getExcel().isOnePagePerSheet());
         com.wiblog.transview.core.bean.TransViewProperties.View.Excel.setMaxRows(properties.getView().getExcel().getMaxRows());
         com.wiblog.transview.core.bean.TransViewProperties.View.Excel.setMaxColumns(properties.getView().getExcel().getMaxColumns());
+        if (properties.getView().getExcel().getLicensePath() != null) {
+            com.wiblog.transview.core.bean.TransViewProperties.View.Excel.setLicensePath(properties.getView().getExcel().getLicensePath());
+        }
 
         // Cad
         com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setConvertType(properties.getView().getCad().getConvertType());
@@ -50,6 +53,9 @@ public class TransViewAutoConfiguration {
         com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setLayout(properties.getView().getCad().getLayout());
         if (properties.getView().getCad().getExtraLayouts() != null) {
             com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setExtraLayouts(properties.getView().getCad().getExtraLayouts());
+        }
+        if (properties.getView().getCad().getLicensePath() != null) {
+            com.wiblog.transview.core.bean.TransViewProperties.View.Cad.setLicensePath(properties.getView().getCad().getLicensePath());
         }
 
         // Word

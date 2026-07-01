@@ -13,9 +13,9 @@ import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.common.WordConvertType;
 import com.wiblog.transview.core.handler.TransViewHandler;
+import com.wiblog.transview.core.utils.LicenseUtil;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -90,9 +90,10 @@ public class WordHandler extends TransViewHandler {
     }
 
     private static void loadLicense() {
-        String licensePath = trimToNull(TransViewProperties.View.Word.getLicensePath());
-        boolean configured = licensePath != null;
-        licensePath = configured ? licensePath : "classpath:license.xml";
+        String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Word.getLicensePath());
+        if (licensePath == null) {
+            return;
+        }
         if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
             return;
         }
@@ -102,12 +103,9 @@ public class WordHandler extends TransViewHandler {
             }
             InputStream licenseStream;
             try {
-                licenseStream = openLicenseStream(licensePath);
+                licenseStream = LicenseUtil.openStream(licensePath);
             } catch (FileNotFoundException e) {
-                if (configured) {
-                    throw new IllegalStateException("Aspose.Words license 加载失败: " + licensePath, e);
-                }
-                return;
+                throw new IllegalStateException("Aspose.Words license 加载失败: " + licensePath, e);
             }
             try (InputStream inputStream = licenseStream) {
                 new License().setLicense(inputStream);
@@ -117,28 +115,6 @@ public class WordHandler extends TransViewHandler {
                 throw new IllegalStateException("Aspose.Words license 加载失败: " + licensePath, e);
             }
         }
-    }
-
-    private static InputStream openLicenseStream(String licensePath) throws FileNotFoundException {
-        if (licensePath.startsWith("classpath:")) {
-            String resourcePath = licensePath.substring("classpath:".length());
-            while (resourcePath.startsWith("/")) {
-                resourcePath = resourcePath.substring(1);
-            }
-            InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourcePath);
-            if (inputStream == null) {
-                throw new FileNotFoundException(licensePath);
-            }
-            return inputStream;
-        }
-        return new FileInputStream(licensePath);
-    }
-
-    private static String trimToNull(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return value.trim();
     }
 
     private static LoadOptions createLoadOptions() {
