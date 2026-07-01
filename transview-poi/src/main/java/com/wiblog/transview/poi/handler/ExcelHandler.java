@@ -33,7 +33,14 @@ public class ExcelHandler extends TransViewHandler {
 
     @Override
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
-        throw new UnsupportedOperationException("Excel 格式转换暂不支持");
+        if (sourceExtensionEnum != ExtensionEnum.XLS && sourceExtensionEnum != ExtensionEnum.XLSX) {
+            throw new UnsupportedOperationException("不支持 " + sourceExtensionEnum.getValue() + " 输入格式");
+        }
+        if (targetExtensionEnum == ExtensionEnum.SVG) {
+            convertToSvgForResponse(inputStream, outputStream);
+            return;
+        }
+        throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + targetExtensionEnum.getValue());
     }
 
     @Override

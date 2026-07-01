@@ -1,8 +1,6 @@
 package com.wiblog.transview.poi.handler;
 
-import com.aspose.words.Document;
-import com.aspose.words.DocumentBuilder;
-import com.aspose.words.SaveFormat;
+import com.aspose.words.*;
 import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
@@ -11,10 +9,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

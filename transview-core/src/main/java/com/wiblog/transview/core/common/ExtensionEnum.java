@@ -17,6 +17,8 @@ public enum ExtensionEnum {
     GIF("gif"),
     DOC("doc"),
     DOCX("docx"),
+    XLS("xls"),
+    XLSX("xlsx"),
     OFD("ofd"),
     SVG("svg"),
     PDF("pdf");

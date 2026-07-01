@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -37,7 +39,7 @@ public class WordHandler extends TransViewHandler {
     @Override
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
         if (sourceExtensionEnum != ExtensionEnum.DOC && sourceExtensionEnum != ExtensionEnum.DOCX) {
-            throw new UnsupportedOperationException("Aspose.Words 24.6 不支持 " + sourceExtensionEnum.getValue() + " 输入格式");
+            throw new UnsupportedOperationException("不支持 " + sourceExtensionEnum.getValue() + " 输入格式");
         }
         if (targetExtensionEnum == ExtensionEnum.SVG) {
             convertToSvgForResponse(inputStream, outputStream);
@@ -92,6 +94,9 @@ public class WordHandler extends TransViewHandler {
     private static void loadLicense() {
         String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Word.getLicensePath());
         if (licensePath == null) {
+            if (TransViewProperties.View.isRemoveWatermark()) {
+                removeWatermark();
+            }
             return;
         }
         if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
@@ -113,6 +118,50 @@ public class WordHandler extends TransViewHandler {
                 licenseLoaded = true;
             } catch (Exception e) {
                 throw new IllegalStateException("Aspose.Words license 加载失败: " + licensePath, e);
+            }
+        }
+    }
+
+    private static volatile boolean watermarkRemoved;
+
+    private static void removeWatermark() {
+        if (watermarkRemoved) {
+            return;
+        }
+        synchronized (LICENSE_LOCK) {
+            if (watermarkRemoved) {
+                return;
+            }
+            try {
+                Class<?> zzodClass = Class.forName("com.aspose.words.zzod");
+                Constructor<?> constructor = zzodClass.getDeclaredConstructors()[0];
+                constructor.setAccessible(true);
+                Object zzodInstance = constructor.newInstance(null, null);
+                Field zzWws = zzodClass.getDeclaredField("zzWws");
+                zzWws.setAccessible(true);
+                zzWws.set(zzodInstance, 1);
+                Field zzVZC = zzodClass.getDeclaredField("zzVZC");
+                zzVZC.setAccessible(true);
+                zzVZC.set(zzodInstance, 1);
+
+                Class<?> zz83Class = Class.forName("com.aspose.words.zz83");
+                Field zzZY4 = zz83Class.getDeclaredField("zzZY4");
+                zzZY4.setAccessible(true);
+                java.util.ArrayList<Object> licenseList = new java.util.ArrayList<>();
+                licenseList.add(zzodInstance);
+                zzZY4.set(null, licenseList);
+
+                Class<?> zzXuRClass = Class.forName("com.aspose.words.zzXuR");
+                Field zzWE8 = zzXuRClass.getDeclaredField("zzWE8");
+                zzWE8.setAccessible(true);
+                zzWE8.set(null, 128);
+                Field zzZKj = zzXuRClass.getDeclaredField("zzZKj");
+                zzZKj.setAccessible(true);
+                zzZKj.set(null, false);
+
+                watermarkRemoved = true;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
