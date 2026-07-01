@@ -38,7 +38,8 @@ public class WordHandler extends TransViewHandler {
 
     @Override
     public void convertHandler(ExtensionEnum sourceExtensionEnum, ExtensionEnum targetExtensionEnum, InputStream inputStream, OutputStream outputStream) throws Exception {
-        if (sourceExtensionEnum != ExtensionEnum.DOC && sourceExtensionEnum != ExtensionEnum.DOCX) {
+        if (sourceExtensionEnum != ExtensionEnum.DOC && sourceExtensionEnum != ExtensionEnum.DOCX
+                && sourceExtensionEnum != ExtensionEnum.WPS) {
             throw new UnsupportedOperationException("不支持 " + sourceExtensionEnum.getValue() + " 输入格式");
         }
         if (targetExtensionEnum == ExtensionEnum.SVG) {
@@ -59,7 +60,7 @@ public class WordHandler extends TransViewHandler {
 
     @Override
     public void viewHandler(InputStream inputStream, OutputStream outputStream, String extension) throws Exception {
-        if (StrategyTypeEnum.DOC.getType().equals(extension) || StrategyTypeEnum.DOCX.getType().equals(extension)) {
+        if (isWordExtension(extension)) {
             if (TransViewProperties.View.Word.getConvertType() == WordConvertType.PDF) {
                 setOutputContentType(Constant.MediaType.PDF_VALUE);
                 convertToPdfForResponse(inputStream, outputStream);
@@ -70,6 +71,12 @@ public class WordHandler extends TransViewHandler {
             return;
         }
         throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + extension);
+    }
+
+    private static boolean isWordExtension(String extension) {
+        return StrategyTypeEnum.DOC.getType().equals(extension)
+                || StrategyTypeEnum.DOCX.getType().equals(extension)
+                || StrategyTypeEnum.WPS.getType().equals(extension);
     }
 
     public static void convertToSvgForResponse(InputStream inputStream, OutputStream outputStream) throws Exception {

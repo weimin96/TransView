@@ -34,12 +34,12 @@ Zero-conversion preview (direct output):
 Conversion preview:
 - CAD: dwg, dxf (default SVG, configurable to PDF)
 - Excel: xls, xlsx (output SVG)
-- Word: doc, docx (default pdf, configurable to svg)
+- Word: doc, docx, wps (default pdf, configurable to svg)
 - OFD: ofd (output PDF)
 
 Format conversion:
 - svg -> png
-- doc/docx -> svg/pdf
+- doc/docx/wps -> svg/pdf
 
 ### Key Features
 

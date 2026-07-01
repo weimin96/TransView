@@ -10,10 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,6 +65,15 @@ public class WordHandlerTest {
     }
 
     @Test
+    public void viewHandlerShouldRouteWpsAsWordDocument() throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        new WordHandler().viewHandler(new ByteArrayInputStream(createDocxBytes()), outputStream, "wps");
+
+        assertThat(outputStream.toByteArray()).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        assertThat(StrategyTypeEnum.getMediaType("wps")).isEqualTo("application/pdf");
+    }
+
+    @Test
     public void viewHandlerShouldUseConfiguredSvgPreviewType() throws Exception {
         TransViewProperties.View.Word.setConvertType(WordConvertType.SVG);
 
@@ -85,6 +91,16 @@ public class WordHandlerTest {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         new WordHandler().convertHandler(ExtensionEnum.DOCX, ExtensionEnum.PDF,
+                new ByteArrayInputStream(createDocxBytes()), outputStream);
+
+        assertThat(outputStream.toByteArray()).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+    }
+
+    @Test
+    public void convertHandlerShouldAcceptWpsSourceExtension() throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        new WordHandler().convertHandler(ExtensionEnum.WPS, ExtensionEnum.PDF,
                 new ByteArrayInputStream(createDocxBytes()), outputStream);
 
         assertThat(outputStream.toByteArray()).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));

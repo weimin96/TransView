@@ -17,6 +17,7 @@ public enum StrategyTypeEnum {
     DXF("dxf", null),
     DOC("doc", Constant.MediaType.IMAGE_SVG_VALUE),
     DOCX("docx", Constant.MediaType.IMAGE_SVG_VALUE),
+    WPS("wps", Constant.MediaType.IMAGE_SVG_VALUE),
     OFD("ofd", Constant.MediaType.PDF_VALUE),
     XLSX("xlsx", Constant.MediaType.IMAGE_SVG_VALUE),
     XLS("xls", Constant.MediaType.IMAGE_SVG_VALUE),
@@ -47,7 +48,7 @@ public enum StrategyTypeEnum {
 
     public static final List<StrategyTypeEnum> EXCEL_TYPES = Arrays.asList(XLS, XLSX);
 
-    public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX);
+    public static final List<StrategyTypeEnum> WORD_TYPES = Arrays.asList(DOC, DOCX, WPS);
 
     public static final List<StrategyTypeEnum> OFD_TYPES = Arrays.asList(OFD);
 
@@ -71,7 +72,7 @@ public enum StrategyTypeEnum {
                     ? Constant.MediaType.PDF_VALUE
                     : Constant.MediaType.IMAGE_SVG_VALUE;
         }
-        if (DOC.type.equals(type) || DOCX.type.equals(type)) {
+        if (DOC.type.equals(type) || DOCX.type.equals(type) || WPS.type.equals(type)) {
             return TransViewProperties.View.Word.getConvertType() == WordConvertType.PDF
                     ? Constant.MediaType.PDF_VALUE
                     : Constant.MediaType.IMAGE_SVG_VALUE;

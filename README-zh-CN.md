@@ -34,12 +34,12 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 在线预览（需要转换）：
 - CAD：dwg、dxf（默认输出 SVG，可配置为 PDF）
 - Excel：xls、xlsx（输出 SVG）
-- Word：doc、docx（默认输出 pdf，可配置为 svg）
+- Word：doc、docx、wps（默认输出 pdf，可配置为 svg）
 - OFD：ofd（输出 PDF）
 
 格式转换：
 - svg -> png
-- doc/docx -> svg/pdf
+- doc/docx/wps -> svg/pdf
 
 ### 核心特性
 
