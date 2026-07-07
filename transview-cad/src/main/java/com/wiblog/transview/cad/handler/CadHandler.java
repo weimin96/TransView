@@ -8,7 +8,7 @@ import com.aspose.cad.imageoptions.CadRasterizationOptions;
 import com.aspose.cad.imageoptions.PngOptions;
 import com.aspose.cad.imageoptions.PdfOptions;
 import com.aspose.cad.imageoptions.SvgOptions;
-import com.wiblog.transview.cad.utils.PdfUtil;
+import com.aspose.cad.watermarkguard.IWatermarkGuardService;
 import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.cache.CadConversionExecutor;
 import com.wiblog.transview.core.cache.CacheKeyUtil;
@@ -20,11 +20,11 @@ import com.wiblog.transview.core.exception.PreviewBusyException;
 import com.wiblog.transview.core.exception.PreviewTimeoutException;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.LicenseUtil;
-import com.wiblog.transview.core.utils.SVGUtil;
 import com.wiblog.transview.core.utils.Util;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -620,36 +620,28 @@ public class CadHandler extends TransViewHandler {
         loadLicense();
         PdfOptions pdfOptions = new PdfOptions();
         pdfOptions.setVectorRasterizationOptions(rasterOptions);
-
-        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
-            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-            cadImage.save(byteOutputStream, pdfOptions);
-            ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
-            PdfUtil.removeWatermark(pdfInputStream, outputStream);
-        } else {
-            cadImage.save(outputStream, pdfOptions);
+        if (TransViewProperties.View.isRemoveWatermark()) {
+            disableWatermarkGuard(cadImage);
         }
+        cadImage.save(outputStream, pdfOptions);
     }
 
     public static void convertToSvg(OutputStream outputStream, CadRasterizationOptions rasterOptions, CadImage cadImage) throws IOException {
         loadLicense();
         SvgOptions svgOptions = new SvgOptions();
         svgOptions.setVectorRasterizationOptions(rasterOptions);
-
-        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
-            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-            cadImage.save(byteOutputStream, svgOptions);
-            ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
-            String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_CAD);
-            outputStream.write(transformedXml.getBytes(StandardCharsets.UTF_8));
-        } else {
-            cadImage.save(outputStream, svgOptions);
+        if (TransViewProperties.View.isRemoveWatermark()) {
+            disableWatermarkGuard(cadImage);
         }
+        cadImage.save(outputStream, svgOptions);
     }
 
     private static void loadLicense() {
         String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Cad.getLicensePath());
         if (licensePath == null) {
+            if (TransViewProperties.View.isRemoveWatermark()) {
+                removeWatermark();
+            }
             return;
         }
         if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
@@ -673,5 +665,70 @@ public class CadHandler extends TransViewHandler {
                 throw new IllegalStateException("Aspose.CAD license 加载失败: " + licensePath, e);
             }
         }
+    }
+
+    private static volatile boolean watermarkRemoved;
+
+    private static void removeWatermark() {
+        if (watermarkRemoved) {
+            return;
+        }
+        synchronized (LICENSE_LOCK) {
+            if (watermarkRemoved) {
+                return;
+            }
+            try {
+                Class<?> czClass = Class.forName("com.aspose.cad.internal.pN.cz");
+                Field licensedField = czClass.getDeclaredField("b");
+                licensedField.setAccessible(true);
+                Object licensedState = licensedField.get(null);
+
+                Class<?> cAClass = Class.forName("com.aspose.cad.internal.pN.cA");
+                Field stateField = cAClass.getDeclaredField("a");
+                stateField.setAccessible(true);
+                stateField.set(null, licensedState);
+
+                watermarkRemoved = true;
+                licenseLoaded = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static volatile Object noopWatermarkGuard;
+
+    private static void disableWatermarkGuard(CadImage cadImage) {
+        try {
+            if (noopWatermarkGuard == null) {
+                noopWatermarkGuard = Proxy.newProxyInstance(
+                        IWatermarkGuardService.class.getClassLoader(),
+                        new Class[]{IWatermarkGuardService.class},
+                        (proxy, method, args) -> {
+                            if (method.getReturnType() == boolean.class) {
+                                return false;
+                            }
+                            return null;
+                        });
+            }
+            Field wmField = findWatermarkGuardField();
+            wmField.setAccessible(true);
+            wmField.set(cadImage, noopWatermarkGuard);
+        } catch (Exception e) {
+            // 反射失败不影响主流程
+        }
+    }
+
+    /**
+     * 按类型定位 Image 上持有 IWatermarkGuardService 的字段。
+     * 该字段为混淆名（24.3 为 l、24.9 为 m），不写死字段名以兼容版本差异。
+     */
+    private static Field findWatermarkGuardField() throws NoSuchFieldException {
+        for (Field field : Image.class.getDeclaredFields()) {
+            if (IWatermarkGuardService.class.equals(field.getType())) {
+                return field;
+            }
+        }
+        throw new NoSuchFieldException("IWatermarkGuardService field not found in " + Image.class.getName());
     }
 }

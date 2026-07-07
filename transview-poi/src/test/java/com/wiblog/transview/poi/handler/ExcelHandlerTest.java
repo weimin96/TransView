@@ -10,6 +10,8 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -19,16 +21,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class ExcelHandlerTest {
 
     private String originalFontsFolder;
+    private String originalLicensePath;
 
     @Before
     public void setUp() {
         originalFontsFolder = TransViewProperties.View.getFontsFolder();
+        originalLicensePath = TransViewProperties.View.Excel.getLicensePath();
         TransViewProperties.View.setFontsFolder(null);
+        TransViewProperties.View.Excel.setLicensePath(null);
     }
 
     @After
     public void tearDown() {
         TransViewProperties.View.setFontsFolder(originalFontsFolder);
+        TransViewProperties.View.Excel.setLicensePath(originalLicensePath);
     }
 
     @Test
@@ -70,5 +76,35 @@ public class ExcelHandlerTest {
         assertThatThrownBy(() -> ExcelHandler.loadWorkbook(new ByteArrayInputStream(new byte[0])))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("字体目录不存在或不是目录");
+    }
+
+    @Test
+    public void convertToSvgShouldNotContainEvaluationWatermark() throws Exception {
+        Workbook workbook = new Workbook();
+        workbook.getWorksheets().get(0).getCells().get("A1").putValue("test");
+
+        ByteArrayOutputStream excelOutput = new ByteArrayOutputStream();
+        workbook.save(excelOutput, SaveFormat.XLSX);
+
+        ByteArrayOutputStream svgOutput = new ByteArrayOutputStream();
+        ExcelHandler.convertToSvgForResponse(new ByteArrayInputStream(excelOutput.toByteArray()), svgOutput);
+
+        String svgText = new String(svgOutput.toByteArray(), StandardCharsets.UTF_8);
+        assertThat(svgText)
+                .doesNotContain("Evaluation Only")
+                .doesNotContain("Aspose.Cells")
+                .doesNotContain("Copyright");
+    }
+
+    @Test
+    public void convertToSvg() throws Exception {
+        File srcFile = new File("C:\\Users\\pwm\\Desktop\\data\\a.xlsx");
+        File destFile = new File("C:\\Users\\pwm\\Desktop\\data\\a_excel.svg");
+        try (FileInputStream inputStream = new FileInputStream(srcFile);
+             FileOutputStream outputStream = new FileOutputStream(destFile)) {
+            ExcelHandler.convertToSvgForResponse(inputStream, outputStream);
+        }
+        assertThat(destFile).exists();
+        assertThat(destFile.length()).isGreaterThan(0L);
     }
 }

@@ -7,9 +7,10 @@ import com.wiblog.transview.core.common.ExtensionEnum;
 import com.wiblog.transview.core.common.StrategyTypeEnum;
 import com.wiblog.transview.core.handler.TransViewHandler;
 import com.wiblog.transview.core.utils.LicenseUtil;
-import com.wiblog.transview.core.utils.SVGUtil;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -107,16 +108,7 @@ public class ExcelHandler extends TransViewHandler {
         options.setOnePagePerSheet(TransViewProperties.View.Excel.isOnePagePerSheet());
 
         SheetRender sr = new SheetRender(sheet, options);
-
-        if (!licenseLoaded && TransViewProperties.View.isRemoveWatermark()) {
-            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-            sr.toImage(0, byteOutputStream);
-            ByteArrayInputStream svgInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
-            String transformedXml = SVGUtil.removeWatermark(svgInputStream, SVGUtil.CUT_TYPE_EXCEL);
-            outputStream.write(transformedXml.getBytes(StandardCharsets.UTF_8));
-        } else {
-            sr.toImage(0, outputStream);
-        }
+        sr.toImage(0, outputStream);
     }
 
     static Workbook loadWorkbook(InputStream inputStream) throws Exception {
@@ -200,6 +192,9 @@ public class ExcelHandler extends TransViewHandler {
     private static void loadLicense() {
         String licensePath = LicenseUtil.resolvePath(TransViewProperties.View.Excel.getLicensePath());
         if (licensePath == null) {
+            if (TransViewProperties.View.isRemoveWatermark()) {
+                removeWatermark();
+            }
             return;
         }
         if (licenseLoaded && licensePath.equals(loadedLicensePath)) {
@@ -221,6 +216,37 @@ public class ExcelHandler extends TransViewHandler {
                 licenseLoaded = true;
             } catch (Exception e) {
                 throw new IllegalStateException("Aspose.Cells license 加载失败: " + licensePath, e);
+            }
+        }
+    }
+
+    private static volatile boolean watermarkRemoved;
+
+    private static void removeWatermark() {
+        if (watermarkRemoved) {
+            return;
+        }
+        synchronized (LICENSE_LOCK) {
+            if (watermarkRemoved) {
+                return;
+            }
+            try {
+                Class<?> axfClass = Class.forName("com.aspose.cells.axf");
+                Constructor<?> ctor = axfClass.getDeclaredConstructor();
+                ctor.setAccessible(true);
+                Object axfInstance = ctor.newInstance();
+                Field axfStaticField = axfClass.getDeclaredField("a");
+                axfStaticField.setAccessible(true);
+                axfStaticField.set(null, axfInstance);
+
+                Field licenseField = com.aspose.cells.License.class.getDeclaredField("a");
+                licenseField.setAccessible(true);
+                licenseField.set(null, "29991231");
+
+                watermarkRemoved = true;
+                licenseLoaded = true;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
