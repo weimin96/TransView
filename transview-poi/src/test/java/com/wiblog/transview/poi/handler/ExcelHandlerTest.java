@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -29,6 +30,7 @@ public class ExcelHandlerTest {
         originalLicensePath = TransViewProperties.View.Excel.getLicensePath();
         TransViewProperties.View.setFontsFolder(null);
         TransViewProperties.View.Excel.setLicensePath(null);
+        TransViewProperties.View.setRemoveWatermark(true);
     }
 
     @After
@@ -106,5 +108,52 @@ public class ExcelHandlerTest {
         }
         assertThat(destFile).exists();
         assertThat(destFile.length()).isGreaterThan(0L);
+    }
+
+    @Test
+    public void convertToPdfShouldNotContainEvaluationWatermark() throws Exception {
+        Workbook workbook = new Workbook();
+        workbook.getWorksheets().get(0).getCells().get("A1").putValue("test");
+
+        ByteArrayOutputStream excelOutput = new ByteArrayOutputStream();
+        workbook.save(excelOutput, SaveFormat.XLSX);
+
+        ByteArrayOutputStream pdfOutput = new ByteArrayOutputStream();
+        ExcelHandler.convertToPdf(new ByteArrayInputStream(excelOutput.toByteArray()), pdfOutput);
+
+        String pdfText = extractPdfText(pdfOutput.toByteArray());
+        assertThat(pdfText)
+                .doesNotContain("Evaluation Only")
+                .doesNotContain("Aspose.Cells")
+                .doesNotContain("Copyright");
+    }
+
+    @Test
+    public void convertToPdf() throws Exception {
+        File srcFile = new File("C:\\Users\\pwm\\Desktop\\data\\a.xlsx");
+        File destFile = new File("C:\\Users\\pwm\\Desktop\\data\\a_excel.pdf");
+        try (FileInputStream inputStream = new FileInputStream(srcFile);
+             FileOutputStream outputStream = new FileOutputStream(destFile)) {
+            ExcelHandler.convertToPdf(inputStream, outputStream);
+        }
+        assertThat(destFile).exists();
+        assertThat(destFile.length()).isGreaterThan(0L);
+        assertPdfHasNoEvaluationWatermark(destFile);
+    }
+
+    private static String extractPdfText(byte[] pdfBytes) throws IOException {
+        return new String(pdfBytes, StandardCharsets.ISO_8859_1);
+    }
+
+    private static void assertPdfHasNoEvaluationWatermark(File pdfFile) throws IOException {
+        byte[] data = java.nio.file.Files.readAllBytes(pdfFile.toPath());
+        String pdfText = new String(data, StandardCharsets.ISO_8859_1);
+        assertThat(pdfText).doesNotContain("Evaluation Only");
+        assertThat(pdfText).doesNotContain("Aspose.Cells");
+    }
+
+    private static String extractPdfText(File pdfFile) throws IOException {
+        byte[] data = java.nio.file.Files.readAllBytes(pdfFile.toPath());
+        return new String(data, StandardCharsets.ISO_8859_1);
     }
 }

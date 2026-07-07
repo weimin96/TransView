@@ -693,6 +693,19 @@ public class CadHandler extends TransViewHandler {
                 stateField.setAccessible(true);
                 stateField.set(null, licensedState);
 
+                // es.b() 在 cA.a == Licensed 之外还校验 es 上的静态 cy 字段 b 是否为 null。
+                // 未加载 license 时 es.b 为 null，导致 es.b() 回退到 cN.a() 判定并返回 Evaluation。
+                // 此处将 es.b 设为 cy.d() 单例，使三个条件全部满足。
+                Class<?> cyClass = Class.forName("com.aspose.cad.internal.pN.cy");
+                java.lang.reflect.Method cyDMethod = cyClass.getDeclaredMethod("d");
+                cyDMethod.setAccessible(true);
+                Object cySingleton = cyDMethod.invoke(null);
+
+                Class<?> esClass = Class.forName("com.aspose.cad.internal.pN.es");
+                Field esBField = esClass.getDeclaredField("b");
+                esBField.setAccessible(true);
+                esBField.set(null, cySingleton);
+
                 watermarkRemoved = true;
                 licenseLoaded = true;
             } catch (Exception e) {

@@ -41,6 +41,10 @@ public class ExcelHandler extends TransViewHandler {
             convertToSvgForResponse(inputStream, outputStream);
             return;
         }
+        if (targetExtensionEnum == ExtensionEnum.PDF) {
+            convertToPdf(inputStream, outputStream);
+            return;
+        }
         throw new IllegalArgumentException(Constant.ERROR_MSG_ILLEGAL_TYPE + ":" + targetExtensionEnum.getValue());
     }
 
@@ -184,6 +188,52 @@ public class ExcelHandler extends TransViewHandler {
         return outputStream.toByteArray();
     }
 
+    /**
+     * excel转换pdf
+     */
+    public static void convertToPdf(InputStream inputStream, OutputStream outputStream) throws Exception {
+        loadLicense();
+        Workbook workbook = loadWorkbook(inputStream);
+        if (TransViewProperties.View.Excel.isCalculateFormula()) {
+            workbook.calculateFormula();
+        }
+
+        int sheetIndex = TransViewProperties.View.Excel.getSheetIndex();
+        WorksheetCollection worksheets = workbook.getWorksheets();
+        if (sheetIndex < 0 || sheetIndex >= worksheets.getCount()) {
+            sheetIndex = 0;
+        }
+        Worksheet sheet = worksheets.get(sheetIndex);
+
+        if (sheet.getCells().getMaxRow() == -1 && sheet.getCells().getMaxColumn() == -1) {
+            handleEmptyExcel(outputStream);
+            return;
+        }
+
+        int maxRows = TransViewProperties.View.Excel.getMaxRows();
+        int maxCols = TransViewProperties.View.Excel.getMaxColumns();
+        if (maxRows > 0 || maxCols > 0) {
+            Cells cells = sheet.getCells();
+            int lastRow = cells.getMaxRow();
+            int lastCol = cells.getMaxColumn();
+            if (maxRows > 0 && lastRow >= maxRows) {
+                for (int i = maxRows; i <= lastRow; i++) {
+                    cells.getRows().get(i).setHidden(true);
+                }
+            }
+            if (maxCols > 0 && lastCol >= maxCols) {
+                for (int i = maxCols; i <= lastCol; i++) {
+                    cells.getColumns().get(i).setHidden(true);
+                }
+            }
+        }
+
+        PdfSaveOptions options = new PdfSaveOptions();
+        options.setOnePagePerSheet(TransViewProperties.View.Excel.isOnePagePerSheet());
+
+        workbook.save(outputStream, options);
+    }
+
     private static void handleEmptyExcel(OutputStream outputStream) throws IOException {
         byte[] emptySvg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' background='#ffffff'><text x='10' y='20'>No Data</text></svg>".getBytes(StandardCharsets.UTF_8);
         outputStream.write(emptySvg);
@@ -242,6 +292,13 @@ public class ExcelHandler extends TransViewHandler {
                 Field licenseField = com.aspose.cells.License.class.getDeclaredField("a");
                 licenseField.setAccessible(true);
                 licenseField.set(null, "29991231");
+
+                // bre.a() 根据 axf.a 是否为 null 同步 bro.a 和 bbd.a 两个内部许可标志。
+                // axf.a 设为非 null 后必须调用 bre.a() 才能使 bro.a = false（非评估模式）。
+                Class<?> breClass = Class.forName("com.aspose.cells.bre");
+                java.lang.reflect.Method breAMethod = breClass.getDeclaredMethod("a");
+                breAMethod.setAccessible(true);
+                breAMethod.invoke(null);
 
                 watermarkRemoved = true;
                 licenseLoaded = true;

@@ -73,8 +73,8 @@ public class CadHandlerTest {
     private static CadRasterizationOptions rasterOptions(CadImage cadImage) {
         CadRasterizationOptions options = new CadRasterizationOptions();
         options.setDrawType(CadDrawTypeMode.UseObjectColor);
-        options.setPageWidth(cadImage.getWidth());
-        options.setPageHeight(cadImage.getHeight());
+        options.setPageWidth(1000);
+        options.setPageHeight(1000);
         return options;
     }
 
