@@ -9,6 +9,7 @@ import com.aspose.cad.imageoptions.PngOptions;
 import com.aspose.cad.imageoptions.PdfOptions;
 import com.aspose.cad.imageoptions.SvgOptions;
 import com.aspose.cad.watermarkguard.IWatermarkGuardService;
+import com.wiblog.transview.cad.utils.PdfUtil;
 import com.wiblog.transview.core.bean.TransViewProperties;
 import com.wiblog.transview.core.cache.CadConversionExecutor;
 import com.wiblog.transview.core.cache.CacheKeyUtil;
@@ -621,6 +622,10 @@ public class CadHandler extends TransViewHandler {
         PdfOptions pdfOptions = new PdfOptions();
         pdfOptions.setVectorRasterizationOptions(rasterOptions);
         if (TransViewProperties.View.isRemoveWatermark()) {
+//            ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
+//            cadImage.save(pdfOutputStream, pdfOptions);
+//            PdfUtil.removeAsposeWatermark(new ByteArrayInputStream(pdfOutputStream.toByteArray()), outputStream);
+//            return;
             disableWatermarkGuard(cadImage);
         }
         cadImage.save(outputStream, pdfOptions);
