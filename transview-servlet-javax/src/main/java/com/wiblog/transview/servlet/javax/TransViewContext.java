@@ -240,8 +240,8 @@ public class TransViewContext {
     /**
      * 文件转换入口
      *
-     * @param file     源文件
-     * @param target   转换目标格式
+     * @param file         源文件
+     * @param target       转换目标格式
      * @param outputStream 输出流
      */
     public static void convert(File file, com.wiblog.transview.core.common.ExtensionEnum target, OutputStream outputStream) {
@@ -251,9 +251,9 @@ public class TransViewContext {
     /**
      * 文件转换入口（InputStream）
      *
-     * @param inputStream 文件流
-     * @param filename    文件名
-     * @param target      转换目标格式
+     * @param inputStream  文件流
+     * @param filename     文件名
+     * @param target       转换目标格式
      * @param outputStream 输出流
      */
     public static void convert(InputStream inputStream, String filename, com.wiblog.transview.core.common.ExtensionEnum target, OutputStream outputStream) {

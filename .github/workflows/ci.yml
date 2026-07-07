@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - java: '8'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-all-jdk8,transview-spring-boot2-starter,transview-demo-boot2'
+            modules: 'transview-formats/transview-core,transview-formats/transview-cad,transview-formats/transview-poi,transview-servlet-javax,transview-all-javax,transview-spring-boot2-starter,transview-demos/transview-demo-boot2'
           - java: '17'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-spring-boot-starter,transview-demo'
+            modules: 'transview-formats/transview-core,transview-formats/transview-cad,transview-formats/transview-poi,transview-servlet-jakarta,transview-all-jakarta,transview-spring-boot3-starter,transview-demos/transview-demo-boot3'
           - java: '21'
-            modules: 'transview-core,transview-cad,transview-poi,transview-servlet-jakarta,transview-all,transview-spring-boot4-starter,transview-demo-boot4'
+            modules: 'transview-formats/transview-core,transview-formats/transview-cad,transview-formats/transview-poi,transview-servlet-jakarta,transview-all-jakarta,transview-spring-boot4-starter,transview-demos/transview-demo-boot4'
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK ${{ matrix.java }}
@@ -75,20 +75,20 @@ jobs:
           fi
       - name: Package
         if: env.version_changed == 'true'
-        run: mvn clean package -DskipTests -Dlicense.skip=true -B -pl transview-bom,transview-core,transview-cad,transview-poi,transview-servlet-javax,transview-servlet-jakarta,transview-all,transview-all-jdk8,transview-spring-boot2-starter,transview-spring-boot-starter,transview-spring-boot4-starter -am
+        run: mvn clean package -DskipTests -Dlicense.skip=true -B -pl transview-bom,transview-formats/transview-core,transview-formats/transview-cad,transview-formats/transview-poi,transview-servlet-javax,transview-servlet-jakarta,transview-all-jakarta,transview-all-javax,transview-spring-boot2-starter,transview-spring-boot3-starter,transview-spring-boot4-starter -am
       - name: Stage artifacts
         if: env.version_changed == 'true'
         run: |
           mkdir staging
-          cp transview-all/target/*.jar staging
-          cp transview-all-jdk8/target/*.jar staging
-          cp transview-core/target/*.jar staging
-          cp transview-cad/target/*.jar staging
-          cp transview-poi/target/*.jar staging
+          cp transview-all-jakarta/target/*.jar staging
+          cp transview-all-javax/target/*.jar staging
+          cp transview-formats/transview-core/target/*.jar staging
+          cp transview-formats/transview-cad/target/*.jar staging
+          cp transview-formats/transview-poi/target/*.jar staging
           cp transview-servlet-javax/target/*.jar staging
           cp transview-servlet-jakarta/target/*.jar staging
           cp transview-spring-boot2-starter/target/*.jar staging
-          cp transview-spring-boot-starter/target/*.jar staging
+          cp transview-spring-boot3-starter/target/*.jar staging
           cp transview-spring-boot4-starter/target/*.jar staging
       - name: Create GitHub Release
         if: env.version_changed == 'true'

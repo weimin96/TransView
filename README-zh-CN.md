@@ -2,7 +2,7 @@
 
 [![Java CI](https://github.com/weimin96/TransView/actions/workflows/ci.yml/badge.svg)](https://github.com/weimin96/TransView/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/weimin96/TransView)](https://github.com/weimin96/TransView/releases/)
-[![Maven Central Version](https://img.shields.io/maven-central/v/io.github.weimin96/transview-all)](https://repo1.maven.org/maven2/io/github/weimin96/transview-all/)
+[![Maven Central Version](https://img.shields.io/maven-central/v/io.github.weimin96/transview-all-jakarta)](https://repo1.maven.org/maven2/io/github/weimin96/transview-all-jakarta/)
 [![GitHub repo size](https://img.shields.io/github/repo-size/weimin96/TransView)](https://github.com/weimin96/TransView/releases/)
 [![License](https://img.shields.io/:license-apache-brightgreen.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![Last Commit](https://img.shields.io/github/last-commit/weimin96/TransView.svg)](https://github.com/weimin96/TransView)
@@ -12,11 +12,11 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## 支持环境
 
-| 环境 | JDK | Spring Boot | 聚合包 |
-|------|-----|-------------|--------|
-| JDK 8+ | 8+ | 2.x | `transview-all-jdk8` |
-| JDK 17+ | 17+ | 3.x | `transview-all` |
-| JDK 17+ | 17+ | 4.x | `transview-all` |
+| 环境      | JDK | Spring Boot | 聚合包                     |
+|---------|-----|-------------|-------------------------|
+| JDK 8+  | 8+  | 2.x         | `transview-all-javax`   |
+| JDK 17+ | 17+ | 3.x         | `transview-all-jakarta` |
+| JDK 17+ | 17+ | 4.x         | `transview-all-jakarta` |
 
 ## 介绍
 
@@ -25,6 +25,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 ### 支持格式
 
 在线预览（零转换，直接输出）：
+
 - 图片：jpg、jpeg、png、gif、webp、bmp、svg
 - 文档：pdf
 - 文本：txt、log、csv、json、xml、yaml
@@ -32,36 +33,40 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 - HTML：支持预览，自动进行安全过滤（白名单策略，移除 script/iframe/form 等危险元素）
 
 在线预览（需要转换）：
+
 - CAD：dwg、dxf（默认输出 SVG，可配置为 PDF）
 - Excel：xls、xlsx（输出 SVG）
 - Word：doc、docx、wps（默认输出 pdf，可配置为 svg）
 - OFD：ofd（输出 PDF）
 
 格式转换：
+
 - svg -> png
 - doc/docx/wps -> svg/pdf
 
 ### 核心特性
 
-- **HTTP 缓存支持**：纯输出格式（HTML 除外）和 CAD 缓存结果均支持 Range 请求、ETag、Last-Modified、Cache-Control、304 Not Modified。HTML 因需安全过滤，不支持 Range/ETag
+- **HTTP 缓存支持**：纯输出格式（HTML 除外）和 CAD 缓存结果均支持 Range 请求、ETag、Last-Modified、Cache-Control、304 Not
+  Modified。HTML 因需安全过滤，不支持 Range/ETag
 - **DWG 磁盘缓存**：CAD 转换结果落磁盘，相同文件+相同配置不会重复转换
 - **缩略图优先**：DWG 首次访问返回 800x600 缩略图（PNG），后台异步生成完整 SVG/PDF
 - **CAD 线程池隔离**：独立线程池 + 内存感知限流，覆盖全部 CAD 路径（File、InputStream、缓存开启/关闭），大 DWG 不阻塞其他转换任务
-- **InputStream 磁盘缓存**：CAD InputStream 预览支持磁盘缓存 — 源文件落盘为临时文件，后续命中缓存直接从磁盘流式输出，无需重新加载 CadImage
+- **InputStream 磁盘缓存**：CAD InputStream 预览支持磁盘缓存 — 源文件落盘为临时文件，后续命中缓存直接从磁盘流式输出，无需重新加载
+  CadImage
 - **多布局缓存**：支持预缓存多个 DWG 布局，切换布局时直接命中缓存
 - **HTML 安全过滤**：基于 Jsoup 白名单策略，自动移除 script、iframe、事件处理器等
 
 ## 包含组件
 
-| 组件名 | 描述 |
-|--------|------|
-| `transview-core` | 核心包，不含 servlet 依赖，编译目标 Java 8 |
-| `transview-cad` | CAD 格式处理模块（dwg、dxf），编译目标 Java 8 |
-| `transview-poi` | 文档格式处理模块（xls、xlsx），编译目标 Java 8 |
-| `transview-servlet-javax` | javax.servlet 适配模块，编译目标 Java 8 |
-| `transview-servlet-jakarta` | jakarta.servlet 适配模块，编译目标 Java 17 |
-| `transview-all` | JDK 17+ 聚合包（core + cad + poi + jakarta） |
-| `transview-all-jdk8` | JDK 8+ 聚合包（core + cad + poi + javax） |
+| 组件名                         | 描述                                      |
+|-----------------------------|-----------------------------------------|
+| `transview-core`            | 核心包，不含 servlet 依赖，编译目标 Java 8           |
+| `transview-cad`             | CAD 格式处理模块（dwg、dxf），编译目标 Java 8         |
+| `transview-poi`             | 文档格式处理模块（xls、xlsx），编译目标 Java 8          |
+| `transview-servlet-javax`   | javax.servlet 适配模块，编译目标 Java 8          |
+| `transview-servlet-jakarta` | jakarta.servlet 适配模块，编译目标 Java 17       |
+| `transview-all-jakarta`     | JDK 17+ 聚合包（core + cad + poi + jakarta） |
+| `transview-all-javax`       | JDK 8+ 聚合包（core + cad + poi + javax）    |
 
 ## 开始使用
 
@@ -72,7 +77,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-all</artifactId>
+    <artifactId>transview-all-jakarta</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -82,7 +87,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-all-jdk8</artifactId>
+    <artifactId>transview-all-javax</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -121,7 +126,7 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ### 使用
 
-[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
+[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demos/transview-demo-boot3) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demos/transview-demo-boot2)
 
 #### 在线预览（InputStream）
 
@@ -286,6 +291,7 @@ transview:
 ```
 
 防护机制：
+
 - **缓存 Key**：SHA-256(文件内容) + 转换参数（布局/尺寸/格式/字体/去水印），确保不同内容或配置不会误命中
 - **in-flight 去重**：同一文件同一配置的并发请求只触发一次转换
 - **失败冷却**：转换失败的文件 5 分钟内不再重试，避免坏文件反复打爆 Aspose

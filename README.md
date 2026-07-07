@@ -2,7 +2,7 @@
 
 [![Java CI](https://github.com/weimin96/TransView/actions/workflows/ci.yml/badge.svg)](https://github.com/weimin96/TransView/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/weimin96/TransView)](https://github.com/weimin96/TransView/releases/)
-[![Maven Central Version](https://img.shields.io/maven-central/v/io.github.weimin96/transview-all)](https://repo1.maven.org/maven2/io/github/weimin96/transview-all/)
+[![Maven Central Version](https://img.shields.io/maven-central/v/io.github.weimin96/transview-all-jakarta)](https://repo1.maven.org/maven2/io/github/weimin96/transview-all-jakarta/)
 [![GitHub repo size](https://img.shields.io/github/repo-size/weimin96/TransView)](https://github.com/weimin96/TransView/releases/)
 [![License](https://img.shields.io/:license-apache-brightgreen.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![Last Commit](https://img.shields.io/github/last-commit/weimin96/TransView.svg)](https://github.com/weimin96/TransView)
@@ -12,19 +12,21 @@ README: [English](README.md) | [中文](README-zh-CN.md)
 
 ## Support
 
-| Environment | JDK | Spring Boot | Artifact |
-|-------------|-----|-------------|----------|
-| JDK 8+ | 8+ | 2.x | `transview-all-jdk8` |
-| JDK 17+ | 17+ | 3.x | `transview-all` |
-| JDK 17+ | 17+ | 4.x | `transview-all` |
+| Environment | JDK | Spring Boot | Artifact                |
+|-------------|-----|-------------|-------------------------|
+| JDK 8+      | 8+  | 2.x         | `transview-all-javax`   |
+| JDK 17+     | 17+ | 3.x         | `transview-all-jakarta` |
+| JDK 17+     | 17+ | 4.x         | `transview-all-jakarta` |
 
 ## Introduction
 
-A universal tool for online preview/conversion of documents. Supports SPI plug-in mode, which can be quickly integrated into Java projects to achieve online file preview and various format conversion functions.
+A universal tool for online preview/conversion of documents. Supports SPI plug-in mode, which can be quickly integrated
+into Java projects to achieve online file preview and various format conversion functions.
 
 ### Supported Formats
 
 Zero-conversion preview (direct output):
+
 - Images: jpg, jpeg, png, gif, webp, bmp, svg
 - Documents: pdf
 - Text: txt, log, csv, json, xml, yaml
@@ -32,36 +34,41 @@ Zero-conversion preview (direct output):
 - HTML: preview with automatic security filtering (whitelist strategy, removes script/iframe/form etc.)
 
 Conversion preview:
+
 - CAD: dwg, dxf (default SVG, configurable to PDF)
 - Excel: xls, xlsx (output SVG)
 - Word: doc, docx, wps (default pdf, configurable to svg)
 - OFD: ofd (output PDF)
 
 Format conversion:
+
 - svg -> png
 - doc/docx/wps -> svg/pdf
 
 ### Key Features
 
-- **HTTP caching**: Plain formats (except HTML) and CAD cache results support Range requests, ETag, Last-Modified, Cache-Control, 304 Not Modified. HTML excludes Range/ETag due to security filtering.
+- **HTTP caching**: Plain formats (except HTML) and CAD cache results support Range requests, ETag, Last-Modified,
+  Cache-Control, 304 Not Modified. HTML excludes Range/ETag due to security filtering.
 - **DWG disk cache**: CAD conversion results stored on disk; same file + same config never re-converts
 - **Thumbnail first**: DWG first access returns 800x600 thumbnail (PNG), async generates full SVG/PDF in background
-- **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling for all CAD paths (File, InputStream, cache-enabled/disabled), large DWGs don't block other tasks
-- **InputStream caching**: InputStream CAD preview now supports disk cache — source is saved to temp file, cached results streamed directly from disk on subsequent hits
+- **CAD thread pool isolation**: Dedicated thread pool + memory-aware throttling for all CAD paths (File, InputStream,
+  cache-enabled/disabled), large DWGs don't block other tasks
+- **InputStream caching**: InputStream CAD preview now supports disk cache — source is saved to temp file, cached
+  results streamed directly from disk on subsequent hits
 - **Multi-layout caching**: Pre-cache multiple DWG layouts, layout switching hits cache instantly
 - **HTML security filtering**: Jsoup whitelist strategy, automatically removes script, iframe, event handlers etc.
 
 ## Components
 
-| Component | Description |
-|-----------|-------------|
-| `transview-core` | Core module, no servlet dependency, compiled to Java 8 |
-| `transview-cad` | CAD format module (dwg, dxf), compiled to Java 8 |
-| `transview-poi` | Excel format module (xls, xlsx), compiled to Java 8 |
-| `transview-servlet-javax` | javax.servlet adapter, compiled to Java 8 |
-| `transview-servlet-jakarta` | jakarta.servlet adapter, compiled to Java 17 |
-| `transview-all` | JDK 17+ aggregate (core + cad + poi + jakarta) |
-| `transview-all-jdk8` | JDK 8+ aggregate (core + cad + poi + javax) |
+| Component                   | Description                                            |
+|-----------------------------|--------------------------------------------------------|
+| `transview-core`            | Core module, no servlet dependency, compiled to Java 8 |
+| `transview-cad`             | CAD format module (dwg, dxf), compiled to Java 8       |
+| `transview-poi`             | Excel format module (xls, xlsx), compiled to Java 8    |
+| `transview-servlet-javax`   | javax.servlet adapter, compiled to Java 8              |
+| `transview-servlet-jakarta` | jakarta.servlet adapter, compiled to Java 17           |
+| `transview-all-jakarta`     | JDK 17+ aggregate (core + cad + poi + jakarta)         |
+| `transview-all-javax`       | JDK 8+ aggregate (core + cad + poi + javax)            |
 
 ## Getting Started
 
@@ -72,7 +79,7 @@ Format conversion:
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-all</artifactId>
+    <artifactId>transview-all-jakarta</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -82,7 +89,7 @@ Format conversion:
 ```xml
 <dependency>
     <groupId>io.github.weimin96</groupId>
-    <artifactId>transview-all-jdk8</artifactId>
+    <artifactId>transview-all-javax</artifactId>
     <version>${lastVersion}</version>
 </dependency>
 ```
@@ -121,7 +128,7 @@ Format conversion:
 
 ### Usage
 
-[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demo) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demo-boot2)
+[demo (Boot 3)](https://github.com/weimin96/TransView/tree/main/transview-demos/transview-demo-boot3) | [demo (Boot 2)](https://github.com/weimin96/TransView/tree/main/transview-demos/transview-demo-boot2)
 
 #### Preview (InputStream)
 
@@ -286,7 +293,9 @@ Request arrives
 ```
 
 Protection mechanisms:
-- **Cache key**: SHA-256(file content) + conversion params (layout/dimensions/format/fonts/watermark), ensures different content or config never collides
+
+- **Cache key**: SHA-256(file content) + conversion params (layout/dimensions/format/fonts/watermark), ensures different
+  content or config never collides
 - **In-flight dedup**: Concurrent requests for same file+config trigger only one conversion
 - **Failure cooldown**: Failed conversions are not retried for 5 minutes, prevents bad files from hammering Aspose
 - **Memory-aware**: Rejects new tasks when available memory is low, returns 503 instead of OOM

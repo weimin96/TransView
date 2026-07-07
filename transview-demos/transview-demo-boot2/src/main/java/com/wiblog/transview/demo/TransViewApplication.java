@@ -1,0 +1,15 @@
+package com.wiblog.transview.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * @author pwm
+ */
+@SpringBootApplication
+public class TransViewApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(TransViewApplication.class, args);
+    }
+}

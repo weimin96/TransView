@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * TransView 自动配置。
  * 属性赋值在 @PostConstruct 同步完成（轻量）；
  * 缓存索引重建和字体目录扫描在后台线程执行（重 IO），不阻塞启动。
+ * @author pwm
  */
 @AutoConfiguration
 @ConditionalOnClass(name = "jakarta.servlet.http.HttpServlet")
